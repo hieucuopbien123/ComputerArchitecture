@@ -1,0 +1,21 @@
+Nửa kỳ đầu:
+Computer là gì. Computer có 4 loại. Abstraction compile từ C sang machine code. Hardware sofeware interface, system software có OS và compiler phục vụ abstraction. 5 bộ phận organize data trong computer và cách chúng tương tác với nhau(processor chứa cả datapath và control). instruction set. JIT, compiler và interpreter. DIMM. tính performance của CPU với CC và instruction, từng phần tử bị ảnh hưởng ntn. Tính static count và số ins trong 1 program. Dạng bài improve performace by CPI. Cách optimize để improve performance
+Các quy tắc về design ins trong MIPS. Register trong MIPS(mỗi register chỉ có 32 bit trong khi memory location thì truy cập đc vô số bit và mỗi register nằm ở ngay địa chỉ 0->31 đầu tiên của memory allocation). 4 type data trong MIPS. Cấu trúc register file. Công dụng các thanh ghi của CPU. Phân biệt memory và register khác nhau trong MIPs vì memory array mà ta thg truy cập là outside CPU, lower than register, kích thước lớn. Cấu trúc 2 cái và operand 2 cái. little endian và big endian là cách lưu địa chỉ theo bit order, VD thanh ghi $t0 lưu địa chỉ trong memory array nào đó thì nó lưu theo thứ tự nào. 
+Signed và unsigned integer store in operands. Tìm biểu diễn binary của số âm. Sign extension trong MIPS. 3 instruction format, 5 instruction types có 2 type dunngf bởi ALU của CPU. Cách dùng các lệnh ins cụ thể thường dùng trong từng ins types. pseudo code có hết bge, bgt, blt, là các ins expanded bởi assembler, đó là lý do assembler có reserved register $at. Cơ chế fetch r thực hiện ins, cơ chế PC trỏ sang ins next. procedure, nested procedure, save and store in $sp, recursive với procedure thực tế y hệt convert code C++. 
+Conditional branch thực chất là I-type. Các lệnh có u ở cuối là zero-extension. Bài toán copy string convert code C++ to MIPS, load 32 bit vào register. Memory configuration. Bảng syscall. Branching kc max với jump ins và conditional branch. 
+
+
+Các dạng bài tính toán nửa kỳ đầu: 
+Các bài tập liên quan đến performance của Comp
+Đếm số instruction trong code, số static instruction
+Tính CPI theo tần số xuất hiện của các instruction
+Tìm word's value for big-endian, little-endian
+Tính giá trị số binary unsigned, convert from/to decimal
+Tính giá trị signed binary
+Tính -x biết x
+Tìm dạng 16 bit signed integer cho số âm và dương
+Tính giá trị thanh ghi dựa vào code MIPS
+Chuyển C code sang assembly code
+Tìm machine code for MIPS code
+Tìm branch instruction sẽ chạy đi đâu
+

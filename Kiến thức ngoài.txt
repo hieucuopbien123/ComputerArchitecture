@@ -1,0 +1,38 @@
+-> Hợp ngữ là ngôn ngữ có khả năng chuyển đổi 1-1 sang ngôn ngữ máy. Ở đây ta chỉ xét hợp ngữ dành cho dòng máy kiến trúc MIPS.
+
+CISC(Complex instruction set computer) phân biệt với RISC(Reduced instruction set computer). Các máy CISC tiêu tốn điện năng hơn các máy RISC vì hợp ngữ của nó phức tạp hơn nhiều. Đây là 2 loại hợp ngữ và kiến trúc máy. Đại diện của CISC là x86 được dùng trên máy cá nhân và server còn đại diện cho RISC là ARM và MIPS. ARM dùng cho di động còn MIPS dùng cho 1 số siêu máy tính và các thiết bị như Nintendo64, Sony Playstation 2.
+MIPS(Microprocessor without Interlocked Pipeline Stages) là 1 kiến trúc RISC instruction set phát triển bởi MIPS Technologies. Có nhiều phiên bản MIPS instruction set tồn tại như MIPS I, MIPS32, MIPS64,..
+
+
+-> Mars là phần mềm giúp lập trình và chạy hợp ngữ MIPS.
+Để chạy phần mềm Mars tối thiểu có JRE: java -jar file.jar
+
+Cách dùng Mars: 
+I/O Tab: hiển thị kết quả console or nhập dữ liệu vào console
+Mars Message: hiển thị thông báo or lỗi
+Registers: thanh ghi, index thanh ghi, giá trị thanh ghi
+Coprocessor 0: Các thanh ghi của bộ đồng xử lý C0, phục vụ xử lý ngắt
+Coprocessor 1: thanh ghi số dấu phẩy động
+
+Có thể đặt breakpoint và chạy tất cả, or chạy từng dòng
+Khi chạy từng dòng, các lệnh màu vàng hiện ra là các lệnh chưa chạy mà chuẩn bị chạy
+
+Execute Tab ta có thể checkbox:
+Hexadecimal Addresses: hiện mọi địa chỉ ở số nguyên hệ 16(nên bật)
+Hexadecimal Values: hiện giá trị ở số nguyên hệ 16
+ASCII: hiện giá trị trong bộ nhớ dạng ASCII
+
+Trong text segment: 
+Address là địa chỉ lệnh, Code là mã máy của lệnh, Basic là lệnh dạng hợp ngữ thuần và tên gợi nhớ cx thành hằng số, Source là lệnh dạng hợp ngữ bổ sung marco hay nhãn giúp lập trình nhanh hơn dễ hơn.
+
+Trong Data Segment:
+address lưu địa chỉ dữ liệu, mỗi dòng tăng 32 đơn vị vì mỗi dòng dùng 32 bytes các địa chỉ liên tiếp nhau
+value là mỗi cột 4 byte nên có 8 cột. Lưu từng cột 1 theo bytes nếu 4 bytes đầu lưu k hết thì lưu tiếp vào 4 bytes sau theo thứ tự ô nhớ lần lượt
+Dùng combobox để chuyển đến các loại vùng nhớ khác nhau như heap, data, text segment
+
+Settings->Show labels windows là cửa sổ hiện tên nhãn và hằng số địa chỉ tương ứng của nhãn -> Click đúp tên biến sẽ chuyển sang vị trí tương ứng trên cửa số data segment
+Settings -> Memory Configuration hiển thị các hằng địa chỉ mà Mars sử dụng. VD mã lệnh luôn bắt đầu từ 0x00400000 còn dữ liệu luôn bắt đầu từ address 0x10000000
+
+Thanh trượt để chỉnh tốc độ thực thi hợp ngữ
+Có thể sửa đổi giá trị của ô nhớ khi chạy từng bước để debug thì nó sẽ lấy giá trị ta sửa
+

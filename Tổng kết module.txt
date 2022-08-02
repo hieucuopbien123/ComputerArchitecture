@@ -1,0 +1,302 @@
+ComputerArchitecture và MIPS:
+
+
+# Thiết bị
+Mỗi pixel trên Bitmap display là 4 bytes. Cái máy rộng và cao 256 pixel
+Các thiết bị: Bitmap Display, Digital Lab Sim, Keyboard and Display MMIO Simulator, Mars Bot
+
+-> Detect phím bấm
+Nếu xử lý mạch cho từng phím rất lâu nên thực tế, các ma trận phím sẽ nối chung các hàng lại và quét lần lượt liên tục từng cột để bắt phím nào đang được bấm. Mỗi phím có 2 cực âm dương, các cực dương được nối với nhau -> cấp điện cho từng hàng -> dí vào từng cực âm nếu có điện thì nút đang đó đang được bấm. Thao tác check phải đủ nhanh để người dùng bấm nhẹ phát là detect được r.
+Trong thực tế, ta k cần quan tâm vì họ dùng sẵn 1 cái driver VD LED driver làm sẵn để check cho ma trận LED, ta chỉ cần cho nó connect với driver thôi. Vc quét qua đèn LED phải đủ nhanh tầm 1/24s để vượt qua tốc độ lưu ảnh của võng mạc con người. 
+
+A(I/O devices) -> B(CPU) thì B gửi A thì B biết nhưng A gửi B như nào thì B k biết => thì B có 1 cái buffer để A gửi vào thì nhét vào đó nhưng lại k thể lúc nào cx check buffer thủ công được nên có 2 cơ chế:
+1) polling: mỗi vài ms sẽ check buffer 1 lần bằng 1 vòng loop chẳng hạn => nhược điểm là CPU sẽ làm rất nhiều vc vì check liên tục
+2) interrupt: B nhận interrupt request từ A, tức trước khi A send data thì A gửi 1 interrupt signal. CPU tại B side có thể rảnh để làm vc khác. Khi có interrupt signal thì stop current work và thực hiện procedure "interrupt handler" là subfunction => làm xong thì quay lại main function
+=> programmer k cần phải gọi subfunction trong main thủ công mà điều này được thực hiện bởi system. System có 1 chân ngắt được khởi động bằng interrupt signal sẽ dừng hoạt động của CPU ngay lập tức => interrupt thì phần cứng phải tự hỗ trợ, check loại mà các chân ngắt phải có. 
+=> Để handle interrupt thì viết chương trình con xử lý ngắt r nhét Ct đó vào địa chỉ mà CPU sẽ gọi tới khi ngắt. Nó tự nhảy tới 1 địa chỉ cố định dù ngắt là do bất cứ thứ gì xảy ra. Lấy địa chỉ đầu tiên của Ct con và nhét vào đúng chỗ or đặt 1 lệnh nhảy vào trong cái địa chỉ đầu tiên để cho nó nhảy sang đúng chỗ vì chỗ address đó rất nhỏ k đủ chỗ cho toàn bộ handler. Hiện tại trình biên dịch đủ mạnh để tự xử lý điều đó mà ta chỉ cần viết vc xử lý dưới dòng .ktext: là cơ chế trên được thực hiện tự động
+=> Viết ct con, viết nhảy vào ct con, nhét lệnh nhảy vào đúng address => bh: viết xử lý dưới ktext là xong
+viết vào ktext là tự có trong 0x80000180 với lệnh jump tự động hết r.
+
+Thanh ghi EPC chứa địa chỉ trở về như thanh ghi $ra của procedure, EPC chứa địa chỉ trở về của chương trình xử lý ngắt sau khi thưc hiện xong, nhưng điểm khác là $ra ta phải tự gọi nhưng EPC hệ thống tự gọi khi ngắt xử lý xong.
+
+Thanh ghi 13 cho biết NN gây ra ngắt là gì, VD timer, phím, lỗi RAM, exception,.. thì luôn nhảy vào 0x80000180 nhưng NN cụ thể phải dùng thành ghi cause $13 mới biết được. Nếu lỗi thanh ghi 13 dạng địa chỉ bộ nhớ k hợp lệ thì $8 vaddr sẽ chứa địa chỉ lỗi đó
+Tương tự với hanh ghi 12 là status khi chạy
+
+eret gọi về Ct con.
+
+Slide phần bôi đỏ: có tình huống PC chưa kịp + 4 cập nhập thì vào trình xử lý luôn thì tạo Loop vô hạn, có thể do lỗi Mars => do đó cần chủ động +4 trong cục xử lý(EPC + 4) và thêm nop vào sau từ trước khi thực hiện là xong
+Điều này thực hiện với lệnh mfc0 để đọc thanh ghi trong bộ đồng xử lý C0 và mtc0 để ghi giá trị vào thành  ghi trong bộ đồng xử lý C0
+
+Cơ chế xử lý nút bấm của MIPS:
+Có 2 địa chỉ là in_address_hexa_keyboard 0xffff0012 và out_address_hexa_keyboard 0xffff0014
+Với địa chỉ in_address thì hàng n cấp điện sẽ out số 2^n ra
+Với out_address thì 4 bit thấp như in_address, cột 1 nối bit 4, cột 2 nốt 5, cột 3 nối 6, cột 4 nối 7. VD hàng 2 cột 2 bấm sẽ có giá trị là 2^1 + 2^5 = 34
+Tức chỉ cần out_address và cấp điện (hay bấm) ô nào sẽ lấy được thông tin về ô đó
+hàng n cấp điện thì out số 2^n ra
+
+Các câu lệnh nop là vô hại nhưng lại giúp fix nhiều loại lỗi, khi thao tác với các thiết bị có nhiều chỗ buộc phải dùng nop mới được. VD khi detect nút bấm trên Digital Lab Sim phải có nop sau bne và j khi check khác 0 mới hiện ra
+
+Ta thực hiện polling bằng cách chờ ở 1 nút 100ms nên có lúc bấm sẽ k nhận được vì khá lâu, mà nếu chờ nhanh hơn thì lag do lỗi Mars
+
+
+
+# Type dữ liệu
+Trong MIPs chỉ dùng 0x... là hexa or trực tiếp decimal, dùng 000111 sẽ coi là 111 của decimal
+
+Message: .asciiz "Bomon \nKy thuat May tinh" => là string kết thúc bằng \0
+A: .word -2, 6, -1, 3, -2 => mảng các số
+
+Mã ASCII 1 byte, mã Unicode 2 bytes.
+
+Họ dùng 1 array cùng type trống ở dưới array bth r load address của array trống - 4 để ra address của final ele of array trước đó. TH array trước đó đc khởi tạo GT sẵn
+
+
+
+# Thanh ghi cơ bản:
+Có loại chip lập trình được và chip k lập trình được. Chip lập trình được khi có register. 
+
+-> MIPS có tổng 32 thanh ghi. Để truy cập vào thanh ghi dùng $ + số thứ tự thanh ghi VD: $1 nhưng thường người ta truy cập vào hẳn tên thanh ghi cơ VD: $at
+MIPS có tư tưởng thao tác lệnh trên thanh ghi nên khi dùng bộ nhớ ta sẽ có các lệnh riêng để nạp dữ liệu từ bộ nhớ vào thanh ghi. Do chạy bằng assembly nên tốc độ rất nhanh. Mỗi thanh ghi lưu 1 giá trị 32 bits và k có kiểu dữ liệu, cách ta dùng nó sẽ quyết định nó lưu kiểu dữ liệu gì.
+
+-> Thanh ghi temporary có thể ghi thoải mái từ t0 đến t9 và s0 đến s7 nhưng thanh ghi a0 đến a3 chứa params truyền vào hàm và v0, v1 có mục đích dùng riêng thì k được. Khi dùng nó phải save để nó lưu vào store và dùng xong phải restore lại value để trả lại nó cho CPU.
+NN là vì thanh ghi này có mục đích riêng chứ k free. VD Mars đang chạy nhiều chương trình thì có thể bị xung đột nên phải save lại để bảo cái gì đang dùng thanh ghi ấy. 
+Thanh ghi pc là program counter (or instruction pointer). VD chương trình có nhiều instruction thì cần biết address của instruction tiếp theo là gì mà CPU thực hiện thì address của instruction mới tiếp theo đó phải lưu ở thanh ghi pc. Chú ý là pc luôn point vào address of next instruction. 
+Nạp mã máy vào CPU phải cho biết địa chỉ đầu tiên của instruction là gì rồi thanh ghi pc chính là 1 counter như đã học trong môn LC circuit. Điều này phải thực hiện thông qua 1 cái loader phần cứng phải xử lý để load địa chỉ đầu tiên vào. Khi xong 1 lệnh, nó sẽ tự cộng 1 và address để nhảy sang lệnh tiếp theo. Giá trị của thanh ghi này vẫn có thể thay đổi theo cách khác nhờ lệnh jump.
+
+$at: assembler dùng để xử lý hằng số lớn
+Các $vn dùng cho return value
+Các $an dùng cho arguments
+$sn dùng cho saved value accross procedure calls
+$gp là global pointer
+$sp là stack pointer
+$fp là framepointer
+$ra là return address(hardware)
+$kn reserved for OS kernel
+
+Thanh ghi HI và LO là thanh ghi high, low dùng cho phép chia lưu số dư và kết quả. Dùng cho phép nhân thì nó lưu kích thước lớn quá 32 bits sẽ cần đến cả 2 thanh ghi
+
+
+
+# Các lệnh cơ bản:
+Tương tự sb lưu 1 byte thấp trong thanh ghi vào vị trí nào trong bộ nhớ RAM
+
+slt $t1, $t2, $t3 =>(set less than) if t2 < t3 thì set t1 là 1, nếu k thì set là 0
+bne $t1, $t2, label =>(branch if not equal) t1 và t2 không bằng nhau thì nhảy sang lệnh có label, bằng nhau thì thực hiện bên dưới bình thường
+beq tương tự là branch if equal
+Có sgt là pseudo ins
+
+Phân biệt: li là load immediate và la là load address
+
+sla, sra là dịch bit giữ dấu còn sll, srl là dịch bit zero extension
+
+nop là lệnh k làm gì cả và khi rẽ nhánh sai thì ta có thể gọi nop để báo hiệu k làm gì
+li $s1, 10 và addi $s1, $zero, 10 như nhau, có thể dùng trực tiếp hexadecimal 0x0000000A được
+
+-> lệnh load/store
+lw và sw là nạp và lưu từ vùng nhớ. MIPS còn cho phép lưu từng byte nhớ nhằm thao tác với các ký tự 1 byte ASCII
+Lệnh lb là load byte và sb là store byte
+Cú pháp: lb $s0, 3($s1) sẽ nạp giá trị byte nhớ có address ($s1 + 3) vào phần byte thấp của thanh ghi $s0
+
+Ta thao tác với address thì lb và sb thao tác với string vì 1 ký tự là 1 bytes thôi, lw và sw thao tác với mảng số vì 1 số mất 4 bytes, dùng cho string vẫn được
+Để lấy 1 address(từ mảng chẳng hạn) thì la nó vào 1 biến; Để lấy giá trị tại 1 address thì lưu address đó như giá trị của 1 biến và dùng lệnh load; Để lưu giá trị vào 1 address thì dùng lệnh store vào 1 biến lưu address đó như giá trị
+
+-> Ở trong Assembly có hàm lấy abs là pseudo instruction nhưng ta có thể thủ công dùng real-instruction bằng cách: gán s0 bằng s1, check nếu s1 nhỏ hơn 0 thì s0=0-s0, còn k thì exit
+=> Chú ý khi code nên làm sao để giảm tải số lượng lệnh nhiều nhất có thể để ct gọn. VD: thay vì so sánh nhỏ hơn 0 thì đảo dấu, ta sẽ so sánh k nhỏ hơn 0 thì bỏ qua, nhỏ hơn 0 thì đi tiếp sẽ tiết kiệm được 1 lệnh jump
+
+lệnh sll sẽ shift left theo số lần là const nhưng sllv sẽ shift left số lần là giá trị của 1 thanh ghi khác. Dùng shift để tính giá trị 2^n ok đấy
+
+Có 2 cách check overflow của phép cộng 2 số:
+Nếu 2 số khác dấu tức thực hiện phép trừ sẽ kbh overflow
+Nếu 2 số cùng dấu:
+dùng lệnh addu tính tổng 2 số. Đặc điểm của lệnh này là nếu 2 số âm bị overflow nó sẽ ra 0, 2 số dương bị overflow sẽ ra 1 số âm cực bé.
+C1: Nếu tổng addu cùng dấu với 2 số thì k overflow, ngược lại là overflow
+C2: Nếu 2 số âm thì check tổng addu phải nhỏ hơn 1 trong 2 số, nếu 2 số dương thì tổng addu phải lớn hơn 1 trong 2 số. Nếu k thỏa mãn sẽ overflow
+
+-> Thao tác với bit hay:
+xor $t1, $s1, $s2
+bltz $t1, EXIT
+=> để check s1 và s2 cùng dấu không. Vì xor nó chỉ nhận 1 khi 2 bit khác nhau nên bit đầu tiên mà khác nhau tức khác dấu thì bit đầu của t1 sẽ là 1, k cần biết các bit sau như nào nhưng bit 1 đầu tiên tức t1 là số âm nên ta check nếu t1 là số âm thì khác dấu và gọi vào label EXIT như trên
+
+Để lấy 1 byte đầu của $s1 chẳng hạn thì ta chỉ cần AND nó với 1111 1111 000.. dạng hexa là 0xFF000000 => chú ý 1 số hexa biểu diễn 4 bit nên FF mới biểu diễn 1 byte. Tức 0xFF000000 biểu diễn 4 bytes. Tương tự có thể clear byte nào nếu muốn.
+=> Sau khi lấy bit phải shift nó right để đưa nó về vị trí cuối chứ vì mọi thứ ta đọc từ cuối mà
+
+Cách chuẩn để clear là xor $s0, $s0, $s0 => để clear cái s0 or dùng and với 0 hết
+
+Có thể dùng logic not tronng assembly đơn giản với: nor $s0, $s0, $s0
+
+
+
+# Procedure call and system call
+-> procedure call
+Thanh ghi ra(return address) dùng cho procedure call. Khi procedure call thi return address của CT lưu vào thanh ghi ra.
+Do ra chỉ lưu được 1 giá trị nên khi hàm lồng hàm sẽ k lưu hết được mà ta phải dùng thêm stack save nó lại
+
+k jump được vào label trong proc, label phải khai báo ngoài proc
+
+--> Tạo main: khởi tạo giá trị $a0-$a4, save và restore nếu cần dùng bên ngoài sau khi bị modify bởi callee
+Tạo procedure: save và restore giá trị với $sp, thao tác với $a0-$a4 và $t0-$t9, save và restore ra nếu bên trong gọi procedure con. Điều chỉnh fp(framepointer).
+Dùng stack để truyền nhiều hơn 3 params vào proc. Thanh ghi fp có thể k cần khi ta cứ cộng thanh ghi sp với hằng số khi restore lại giá trị thôi
+Thanh ghi fp lưu pointer vị trí đầu thực chất là vị trí cuối của previous frame, sp lưu vị trí cuối của frame hiện tại. Trong 1 frame là 1 stack lưu: [old $fp, $ra, params of frame]. 
+Chiều của stack quy định từ low address to high address, chiều ngược lại cx được nhưng k nên
+
+main: 
+  init a0, a1, a2, a3
+  jal proc1
+  get v0, v1
+  other handler
+proc1: 
+  save t0-t9, s0-s7 to sp
+  save ra to sp
+  jal proc2 => dùng mọi thanh ghi a t s
+  restore value ra
+  restore value t0-t9, s0-s7
+  jr $ra
+proc2:
+  save t0-t9, s0-s7 to sp
+  //todo
+  restore value t0-t9, s0-s7
+  jr $ra
+
+--> recursive phức tạp hơn như VD của thầy:
+main gọi:
+proc1: 1-2 (fact)
+proc2: 3-4 (L1)
+=> thứ tự call:
+1(address main) 1(address x) 1(address y)
+3(x)            3(address y) 2 => call jr load address y chạy 4 -> load address x chạy 3 -> load address main quay về main 
+
+=> việc dùng chỉ là quy ước, nếu k đổi giá trị thì chả cần save hay restore
+
+-> syscall
+syscall gọi theo giá trị của thanh ghi v0 có từng chức năng khác nhau được ghi trong Lab 5 như terminate excution, dialog hay standard input và output, confirmdialog, random int, in string rời rạc từng đoạn
+
+Khi dùng syscall để nhập từ standard input thì ta hoặc là ghi hết bộ nhớ ký tự khai báo 2 là ấn enter nhưng rất ảo là ấn enter thì nó lấy cả cái enter đó lưu vào string
+
+
+
+# 3 loại instruction
+-> Có 3 khuôn dạng lệnh I(Immediate), J(Jump), R(Register). VD:
+add $t0, $t1, $t2 => là R type vì toàn register
+addi $t0, $t1, 100 => là I type. Số 100 gọi là immediate value
+j LABEL => J type
+
+Cấu trúc của nó kiểu:
+R: 6 Opcode, 5 source1, 5 source2, 5 destination register, 5 shift amount, 6 opcode extension
+I: 6 Opcode, 5 Source, 5 Destination, 16 Immediate operand/address offset
+J: 6 Opcode, 26 memory word address
+=> Opcode là ALU instruction số học, Opcode extension là add và sub
+ta k shift nên thường shift toàn 0
+
+VD1: Ta dùng 1 lệnh addi $t1, $zero, 5
+=> Nó sẽ chuyển về Basic instruction vẫn là chính nó vì số nhỏ nên đây kp là pseudo instruction: addi $9, $0, 0x00000005
+=> Phần code sẽ là: 0x20090005 chuyển sang binary thành: 00100000000010010000000000000101
+=> đây là I type nên tách theo cấu trúc: 
+001000 00000 01001 0000000000000101 tương ứng với
+addi   $zero $t1   5
+=> Để biết 001000 là addi có thể tra trong: http://alumni.cs.ucr.edu/~vladimir/cs161/mips.html vì mỗi function có 1 số thứ tự riêng VD addi có index là 8. Còn 01001 là $t1 vì $t1 có index là 9
+
+VD2: 
+000000 10000 10001 01000 00000 100000
+arimetic $s0 $s1   $t0   unused add
+
+VD3: la $s0, 100 => I type và 100 là address offset chứ kp value => load value tại address địa chỉ 100 lưu vào thanh ghi $s0
+
+-> Trong assembly có basic instruction và pseudo instruction có thể xem trong Help. Các câu lệnh basic instruction có thể thao tác trực tiếp nhưng 1 lệnh R type chẳng hạn thì không thể cộng 1 số lớn như 32 bit được vì 1 số dài 32 bit k thể fit vào source hay dest được. Do đó người ta nghĩ ra các extended instruction.
+Pseudo instruction là legal MIPS assembly language instruction mà k có phần cứng thực hiện trực tiếp. Nó chỉ được sinh ra để thuận tiện cho lập trình viên và khi sử dụng nó thì assembler sẽ chuyển sang real MIPS instruction cho ta thôi. VD ta k thể mỗi khi cộng số ta phải tính trước nó bao nhiêu bit để biết cộng trực tiếp hay tách thành 2 lệnh thì pseudo code sẽ gom 2 lệnh đó thành 1 lệnh chung mà ta dùng sẽ chương trình sẽ tự tính nó bao nhiêu bit và dùng command tương ứng.
+Nói cách khác, MIPS instruction rất nhỏ và để làm được những thứ phức tạp buộc phải dùng các pseudo instruction cho nhanh. Pseudo instruction tự được enable trong Mars rồi, chỉ cần dùng thôi. VD lệnh LA sẽ bị tách thành 2 khi chạy
+
+Lưu 1 số 32 bits vào thanh ghi 32 bits k được vì k còn chỗ lưu các operand khác nên ta có thể viết 2 lệnh or dùng lệnh giả(r chương trình cũng sẽ chuyển thành 2 lệnh).
+VD: addi $s0, $zero, 0x2110003d sẽ tách số kia thành 2 nửa.
+lui $1, 0x00002110 => lưu vào $1 số nào
+ori $1, $1, 0x0000003d => nối 2 cái r lại lưu vào $1
+add $16, $0, $1 
+=> Lưu từng nửa vào $1 và nó lưu hết r thì mới lưu tiếp vào $16 vì k thể lưu trực tiếp số lớn 
+
+
+
+# Cơ chế các mạch tính toán đơn giản:
+-> Divider:
+VD cái divider 6:2=3 thì 0110:0010 thì ta viết: 0000 0110 là [remainder][quotient] => ta sẽ dịch trái từng cái và ghi kết quả dần vào bit phải ngoài cùng
+0000 1100 thì lấy nửa trái 0000-0010=1110 là số âm nên viết 0 vào bit cuối của quotient vẫn thế
+0001 1000 thì 0001-0010=1111 là số âm lại viết 0 vào vẫn thế
+0011 0000 thì 0011-0010=0001 là số dương nên viết 1 vào bit cuối quotient bên phải thành 0001 và số dư thành giá trị sau khi trừ là 0001 => 0001 0001
+0010 0010 thì 0010-0010=0000 là số dương lại viết 1 vào cuối quotient thành 0011, remainder thành số sau khi trừ là 0000 => 0000 0011 => kết quả là 3 dư 0
+dividend:divisor=quotient dư remainder thì remainder luôn cùng dấu với dividend.
+
+-> Biểu diễn floating point
+Standard form của floating point number: 2.012E+03 thì 2.012 là mantissa, 03 là exponent
+Binary float point thì: X = +-1.xxxxx*2^(yyyy) 
+=> Máy biểu diễn bằng IEEE 654-1985 standard: s(1bit) E(8bits) F(23bits) => dạng 32 bits, t k xét dạng 64bits
+
+1.101011*2^3 -> dịch 3 bit thành 1101.011 -> ez
+
+-> Tràn số
+Trong MIPS tràn số 122 + 8 sẽ ra -126
+VD: add s1, t1, t2 mà too large thì tùy loại CPU cho khác nhau. Với MIPS nó dùng extended code, với Intel nó dừng Ct và k báo lỗi. Có nhiều CPU nó còn lấy giá trị max và k báo lỗi vì nó coi giá trị quá lớn thì k cần quá chính xác.
+
+-> Adder:
+Cái tên ripple carrier adder là do số dư viết kiểu truyền liên tiếp giống gợn sóng 0^0^0^1^1^0^1.
+Nếu ta làm kiểu cộng bth thì số lượng AND gate là 2^n-1 với n là số bit của số cần cộng. Nếu cộng số 32 bti thì cần đến 2^32-1 AND gate là vô lý.
+Họ dùng carry look ahead với g, p làm biến phụ làm giảm thời gian và số lượng AND gate đi nhiều(slide), còn dùng kết hợp cả sequential và parallel.
+VD 16 bit thì: [4 bit]^[4 bit]^[4 bit]^[4 bit] => trong mỗi khối là 4 bit thực hiện song song ở bên trong, còn bên ngoài nối tiếp nhau là sequential. VD này nó nhanh hơn 4 lần tính chay, lượng gate delay cũng giảm để cho ra kết quả. 16 bit thì dùng G, P thì cần 5 gate để ra C1->C4
+
+-> Multiplier:
+Fast multiplier cũng chỉ là rút ngắn các công đoạn, k cần dịch bit. Vc tính parallel multiplier nhanh nhưng gặp vấn đề về số lượng bit tăng lên nhanh sau khi nhân
+
+-> Đổi binary sang decimal nhanh:
+Booth alg là 1 cách khác để đổi từ binary sang decimal: Tốc độ của booth alg nhanh hơn là cách tính thông thường vì nó chỉ quan tâm khi đổi 1 sang 0, 0 sang 1
+VD: A = 11110001.0 -> nó lấy từ Q0, Q-1 thì quy tắc là ban đầu A = 0 xong 00, 11 thì chỉ shift right, 10 thì A = A - M, 01 thì A = A + M
+thì A = -2^0 + 2^1 - 2^4 vì đầu tiên là 10 thì -2^0 vì tính từ Q0Q(-1), tiếp là 01 thì +2^1, tiếp 00 00 ta k quan tâm, dịch phải đến bit thứ Q4 là 10 thì -2^4, còn lại toàn 11 thì bỏ qua hết. Cuối cùng kết quả là như trên. 
+=> Do nó kp gặp cái nào cũng tính mà chỉ tính khi đổi dấu nên tốc độ nhanh hơn
+
+
+
+# Thiết kế 1 CPU có 9 instruction cơ bản
+
+
+
+# Other 
+-> Stack luôn có trong bộ nhớ và chỉ khi gọi CT con thì nó mới lưu vào stack. Stack segment lưu biến cục bộ thôi còn data segment lưu biến global static
+VD cộng 2 số bằng stack: push x, push y vào stack -> z = conhaiso -> pop x, pop y -> x + y
+Vd cộng 2 số bằng register: addi $t0,$zero,10 -> addi $t1,$zero,20 -> add $t1,$t0,$t2 => dùng các thanh ghi tạm
+=> nên dùng thanh ghi nếu có thể
+
+LSb -> bit
+LSB -> Byte
+
+Racing condition là khi PC + 4 mà lại trở về như cũ.
+
+-> Trong CPU có bus interface list nhận lệnh và execution unit thực hiện lệnh. Chỉ lệnh jump mới có tác dụng đổi giá trị thanh ghi pc. Với các lệnh khác thì k sao nhưng khi thực hiện lệnh jump thì cpu có thể load cả 2 lệnh vào 1 lúc dẫn đến cái lệnh sau lệnh jump cũng được load vào CPU để thực hiện đồng thời và khi lệnh jump được exec nó mới nhận ra sai lầm nhưng CPU vẫn phải thực hiện tiếp dẫn đến khi dùng lệnh jump sẽ nghiễm nhiên thực hiện dôi ra 1 lệnh sau lệnh jump
+=> Đây là 1 bug và trong Mars, mặc định nó k check delay branching trong setting tức là nó tự động sắp xếp lại thứ tự các lệnh khi execution và thực hiện fix cái lỗi trên. Nếu ta check delay branching sẽ thấy chương trình chạy sai lệnh jump 
+=> Trong các ngôn ngữ bậc cao, nó tự xử lý hết cho ta, đó là NN vì sao khi nhìn vào assembly của code sau compile sẽ thấy compiler tự động thêm hàng loạt lệnh nop vào sau lệnh jump để khắc phục lỗi này. Recommend là ta check cái delay branching và tự động thêm nop vào sau jump để tránh với các project lớn hơn thì vc tự động sắp xếp lại code có thể khiến CT chạy k đúng ý ta
+
+-> Kinh nghiệm viết vòng lặp for trong assembly dùng label thì ta nên tạo ra 1 label khởi tạo giá trị và bên dưới là loop thì ta biểu diễn trước cụm statement y hệt: for(int i = 0; i < n; i++) => sau đó content viết sau chứ đừng làm luôn dễ loạn. 
+Để tạo for ta dùng 1 biến index và lưu *4 nó lên lưu vào biến khác để cộng vào address A[0] để lấy A[index] r thao tác với địa chỉ A[index] thoải mái
+=> Cứ nắm vững code bằng C++ thì chuyển sang y hệt các bước logic k khác gì
+
+-> Thật ra làm chủ assembly k khó vì chỉ có tổng cộng cũng chỉ là vài quy tác đơn giản:
+cách lưu mảng int string, cách nhập và in ra, proc khác hàm binh thường ở chỗ dùng jr $ra sẽ tự quay về gốc còn hàm thì phải dùng j nên k thể tái sử dụng do jump đến các vị trí khác nhau, 
+Để gán hay lấy giá trị tại 1 vị trí bất kỳ của array: la để lấy địa chỉ bắt đầu của mảng -> lấy index hiện tại nhân lên kích thước của 1 phần tử mảng và cộng với địa chỉ bắt đầu mảng -> lw / sw cái địa chỉ kia vào thanh ghi nào 
+=> Đúng 3 bước cơ bản
+Khi thao tác với mảng string nhiều ô nhớ phải thao tác từng ô 1 bằng loop. In ra thì k cần vì nó cứ in và chỉ khi gặp \0 mới tự dừng
+
+-> Trap:
+Giả sử có 1 array word lưu số 4 bytes và ta duyệt vòng for qua từng byte của array đó. Nếu array này là mảng string thì ta duyệt qua từng phần tử, mỗi phần tử là 1 byte ok ngay nhưng mảng số thì lưu 4 byte mới được 1 số trong bộ nhớ của MIPS.
+VD mảng 1,2,3 sẽ lưu 
+8bit0 8bit0 8bit0 00000001 8bit0 8bit0 8bit0 00000010 8bit0 8bit0 8bit0 00000011
+ô nhớ 1                    ô nhớ 2                    ô nhớ 3
+------> thứ tự ô nhớ trong bộ nhớ lưu tăng dần -------->
+nhưng nó lưu từ phải qua trong mỗi ô nhớ tức là ta dùng lbu sẽ duyệt từng byte theo thứ tự từng ô nhớ unsigned tức zero extension tức giá trị duyệt được sẽ ra 100020003000 -> kết thúc loop
+
+-> Tổng quan:
+Các lệnh cơ bản của MIPS 3 loại có cả pseudo code
+Lệnh load/store và thao tác với mảng và các kiểu dữ liệu
+Lệnh thao tác với logic bit
+Procedurecall và syscall
+Thao tác interrupt
+Vẽ marsbot di chuyển
+Vẽ hình trên bitmap display
+Thao tác với thiết bị keyboard
+Thiết kế CPU tối ưu 9 instruction
+Cơ chế các mạch arthimetic logic thiết kế
+

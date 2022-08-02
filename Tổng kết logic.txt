@@ -1,0 +1,78 @@
+Các kiến thức kp nhớ mà liên quan đến logic suy luận, vì kiến thức nhớ chay thôi thì chán lắm
+
+
+Bài 1:
+Logic: 
+Cơ chế compile từ high-level language -> machine code
+
+Logic các thành phần của máy tính xử lý data:
+Điều đặc biệt là CPU k chỉ có control và datapath mà còn có cache mem là SRAM cho phép access data trực tiếp => do cái này như 1 main mem truy xuất nhanh được từ CPU nên CPU fetch qua lại main mem nhanh
+
+Tính toán performance
+
+
+Bài 2:
+Khó nhớ: 32 register, mỗi register lưu 32 bits data, address của register lưu cần 5 bits vì nó là 1 số từ 0-31
+
+Thực chất big endian là từ address nhỏ đến lớn chứ éo có trái phải gì cả. 4 bytes đó mới chỉ là ô nhớ mà ta đang xét, nên trong MIPS ta thấy nó store từ phải qua trái trong data segment
+Tức msb của nó là bit nhỏ nhất trong ô nhớ và cũng là điểm bắt đầu => ta tính đúng r
+
+immediate encoded right in function và $zero
+leaf procedure và non leaf procedure
+
+I format chỉ support max đến 16 bits immediate
+
+các lệnh có u là compare unsigned thì ở đây ta nói tới zero extension dùng cho các operand => k đúng lắm về zero extension
+
+Load và store quy tắc của nó: cái hay là offset phải là multiple of 4
+
+
+Logic:
+Cơ chế lưu số âm dương và chuyển từ số âm sang dương và cơ chế sign extension 
+Cơ chế chuyển từ instruction sang machine code
+Cơ chế jump được là nhờ cộng vào và 2 lệnh jump có giới hạn khác nhau, làm sao để jump xa hơn nx
+Viết các instruction biểu diễn vòng lặp cũng như các loại câu điều kiện
+Cơ chế gọi procedure call và lưu giá trị biên
+Cơ chế lưu data stack, heap, static này nọ
+
+
+Bài 3:
+Khó nhớ:
+sign extend – addi, addiu, slti, sltiu
+zero extend – andi, ori, xori
+overflow detection – add, addi, sub
+
+Logic:
+Cơ chế làm phép công nhanh với carry look ahead 16 bits
+Cơ chế làm phép nhân và thanh ghi hi lo 
+Cơ chế làm phép chia và thanh ghi hi lo: điều đb là remainder luôn cùng dấu dividend =>***
+Thuật toán booth
+Cơ chế biểu diễn số thập phân và convert qua lại IEEE và số thập phân decimal
+Cơ chế cộng và nhân 2 số thập phân 
+
+
+Bài 4: 
+Cơ chế fetch, decode, execute R, load/store, branch, jump instruction: điều đặc biệt là Instruction Memory và Data Memory cùng nằm trong main memory RAM nhé và ta tách riêng ra cho dễ nhìn thôi
+Trong bài nó cứ vẽ tất cả ra và dùng ControlUnit và multiplexer để lọc lấy cái nào và thực hiện instruction nào
+
+Cơ chế thiết kế ALU Control: điều đb là mỗi lần nó dùng 4 bit truyền vào => Cơ chế khi thêm Control Unit vào xử lý từng loại instruction
+
+Cơ chế tính normal time và vì sao nó lãng phí
+Cơ chế khi dùng pipeline fix và vì sao nó nhanh hơn
+
+Cơ chế và cách fix structural hazard:
+Điều đặc biệt là do dùng pipeline mới cần các loại hazard này, nếu cứ wait thôi thì xong cmnr. Chia 2 TH là data memory và thanh ghi. Data memory thì ok thêm cache và separate instruction. thanh ghi thì chia 2 nửa
+
+Data Hazard: thật ra cơ bản vl, có 2 case là read before write và load use
+case read before write thì dùng trực tiếp dược bằng cách forward tt từ đít ALU về lại đầu ALU nên phải xử lý thêm datapath thôi
+Load-use thì phải lưu vào mem xong r nó mới cho bay về đầu ALU nên phải chờ thêm 1 cycle trống
+=> Chính vì cái load-use ảnh hưởng nhưng thứ tự code có thể tránh được và đó là nv tối ưu của compiler
+
+Cơ chế control hazard: rất cơ bản
+Cách vật lý thì có thể thêm phần cứng cho nó thực hiện tính toán branch trước trong ID stage nhưng cách này k hay nên ta xét các cách kết hợp với nó rất hay là prediction
+Theo thứ tự implements thì: IM -> REG -> ALU -> DM -> Reg
+thì khi thực hiện beq sẽ phải chờ ALU thực hiện xong thì mới có kết quả là nhảy vào branch nào. Cách đơn giản nhất là chờ qua ALU thì sẽ phí 1 cycle 
+Cách khá hơn là predict barnch tiếp theo, đúng thì ok, sai thì vẫn phí 1 cycle như khi k predict. Nên có 2 cách predict:
+Static branch prediction: nó dựa vào hành vi bth là loop và if thì thường quay lại nhiều hơn là TH thoát khỏi điều kiện
+Dynamic branch prediction: nó lưu trạng thái của branch condition lại, nếu lần sau gặp lại branch condition đó(vòng loop) thì đoán là cái lần trước lấy => Với loop sẽ max đoán sai chỉ 2 lần đầu và cuối.
+

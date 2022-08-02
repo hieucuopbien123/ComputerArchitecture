@@ -1,0 +1,54 @@
+# Thiết kế 1 CPU có 9 instruction cơ bản: 
+-> CC thg giới hạn 5GHz vì lớn hơn có thể sinh quá nhiều nhiệt
+Thông số về CPI phụ thuộc vào implementation CPU như nào. Sau khi dùng pipeline, dường như CPI của CPU của ta = 1(sau khi thực hiện được 5 instruction parallel)
+Trong modern CPU, nó chơi cả CPI < 1 => dễ mà
+Thành phần control unit trong datapath xử lý data trong datapath -> nó xử lý 1 cycle gồm 3 hành động: fetch decode exec quay vòng tròn. 
+Ở bước decode, control unit check loại format R I J để decode đúng format của instruction
+Có 2 loại mạch là sequential và combinational. Loại sequential chạy theo chuỗi và state được lưu từng step bằng diagram. Control Unit nó dùng kiểu sequential số lượng lớn phức tạp.
+
+-> Trong hình vẽ, mỗi lần clock xuống r lại xuống lần tiếp theo thì giữa 2 lần đó tạo 1 cycle. Sequential luôn cần clock như v để operate. Sau mỗi lần PC fetch thì PC tự +4 sau mỗi CC.
+Instruction Decode by Control Unit, 6 bit đầu để xác định loại instruction, 26 bit sau để format đúng ins đúng format. Khi đó register sẽ send nhiều signal tới các components khác để báo hiệu, đồng thời read register file.
+-> VD gặp R format: add s1, s2, s3 thì s1 là rd, s2 là rs, s3 là rt. Thì s2, s3 là thứ send to ALU, tức 2 cổng read 5 bit của Registers nhận vào s2, s3 và giá trị của nó đi ra cổng read data1, read data2 và truyền vào ALU -> ALU Control xác định rằng ALU cần dùng hàm add và nó sẽ tính ra cho ta.
+-> VD gặp I format: lw $t0, 20($s0) thì value of 2 operand 20 là immediate 16 bits và $s0 là operand 32 bits được đọc và send to ALU -> nó được convert 20 từ 16 bit thành 32 bit bằng sign extension còn giá trị $s0 đọc từ register file -> ALU thực hiện phép cộng 20 + $s0
+Tùy vào loại I là load hay store operator sẽ có thực hiện khác nhau. Load thì lấy từ data mem viết vào thanh ghi trên register file và MemRead, RegWrite activate. Store thì đọc từ register file và ghi vào data mem, MemWrite activate.
+-> VD gặp lệnh Branch: beq $s1, $s2, TARGET thì tương tự read từ $s1, $s2, ALU tính s1-s2 và lấy zero flag output. Đây là flag on bằng 1 khi hiệu ra 0. 
+Nếu ra 0 thì: PC += TARGET*4 + 4
+Nếu ra != 0 thì PC += 4
+=> Tương tự trước đó cái label TARGET nó cũng chuyển từ 16->32 bits r mới thực hiện 
+-> VD gặp lệnh Jump: giữ 4 bit cao nhất của thanh ghi PC và 26 bits sau của instruction sẽ shift left 2 bits được 28 bit rồi combine nó với 4 bit cao nhất của PC + 4 ra Jump address và gửi back to PC ra địa chỉ mới. Vc shift left tức *2^2 tức nhân 4 lên, combine lại sẽ được PC += 4 + TARGET*4. Cuối cùng đi qua multiplexer chọn địa chỉ đó gán cho PC
+
+Load instruction cần Data memory vì ta cần read data từ nó
+Register file là thanh ghi kiểu như đọc giá trị thanh ghi nào còn data mem kiểu ta muốn lấy 20($s0) chẳng hạn là bộ nhớ lớn lưu data trong mainmem
+Cái beq phải chú ý nó chạy song song nên ta chỉ lấy đường dài nhất là đi qua 3 cái kia và kết quả là 500ps. VD ta đã bỏ qua cục Add 200ps ở pc mà đi theo cục IMem -> Reg Read -> Register file
+
+CPU clock cycle nó lấy cái longest time operation vì 1 instruction buộc phải execute trong 1 clock cycle nên nếu 1 instruction có time exec quá clock cycle sẽ kbh đủ time để đc exec => CPU clock cycle must support longest instruction => phí tài nguyên, đặc biệt nếu có 1 instruction nào đó nặng (đang xét CPI=1 để tối ưu)
+Giải pháp: fetch cái sau song song trước khi cái trước thực hiện xong(overlap), thực hiện parallel, chia 1 instruction cycle thành nhiều cycle nhỏ hơn.
+Giải pháp đầu là dùng pipeline. Để cải thiện tốc độ, ta phải chia phần cứng thành nhiều phần thực hiện từng công việc. VD 1 cái IMem k thể dùng cùng lúc fetch 2 instruction được. Khi instruction 1 vào và thực hiện xong phần đó của hardware(dù chưa thực hiện xong instruction ở các part hardware khác) thì instruction khác có thể vào IMem để fetch tiếp được r vì phần cứng đó đã free. Tận dụng kẽ hở này để tăng tốc CPU => chia 5 stages
+
+Clock cycle để thực hiện instruction: 
+Ban đầu 1 CC là 1 instruction longest là 800ps
+Bh ta chia ra 1 CC dài 200ps vì step nhỏ thực hiện lâu nhất là 200ps(nếu dùng 100ps nó vân chờ cho đủ 200ps) và mọi instruction đều mất 1000ps tức 5 CC tương ứng với 5 bước với mọi loại instruction bất kể nó có dùng đến cả 5 bước đó hay k.
+Trông có vẻ lâu nhưng xét về tổng thể Ct sẽ chạy nhanh hơn vì thực hiện song song.
+Original:
+Instruction1(800ps) - Instruction2(800ps) => 1600ps
+Chia cycle nhưng non-pipeline:
+Instruction1:IFetch(200ps)-Dec(200ps)-Exec(200ps)-Mem(200ps)-WB(200ps) - Instruction2:IFetch(200ps)-Dec(200ps)-Exec(200ps)-Mem(200ps)-WB(200ps) => 2000ps
+Pipeline:
+Instruction1:IFetch(200ps)-Dec(200ps)-Exec(200ps)-Mem(200ps)-WB(200ps) - Instruction2:IFetch(200ps)-Dec(200ps)-Exec(200ps)-Mem(200ps)-WB(200ps) => 1200ps vì IFetch của instruction2 bắt đầu chồng lên Dec của instruction1
+
+Slide 47: Để thưc hiện 1 triệu lệnh adds, kiểu bth tốn 800*10^6, dùng pipeline chỉ còn 200*10^6 + 800
+
+-> Pipeline Hazard là hiện tượng 1 ins phải chờ ins khác hoàn thành trước r mới làm vì gây xung đột vùng nhớ, data chưa sẵn sàng, thực hiện lệnh nhảy về sau dù biểu thức conditional branch trước đó chưa bt => Hầu hết fix được bằng waiting nhưng delay program giảm performance => có cách khác
+1) Structural hazards: Trong MIPS mà pipeline với single memory thì khi 2 instruction cùng truy cập vào single mem sẽ bị chặn, kể cả truy xuất data khác nhau vì single mem ở đây chỉ cho vào/ra 1 data tại 1 thời điểm. 
+Nó có thể fix tốt hơn với level 1 cache, dùng instruction cache và data cache, sử dụng multiple hardware để nhân bản từng phần của memory và map vào cache. Nhưng k dùng được với register file vì nó như temp mem cho mọi thứ(trừ conditional branch) trong qtr CPU chạy thôi, k thể multiply. 
+Nó dùng time division access để có thể read/write cùng cycle. Nửa trước của cycle cho write, nửa sau cho read(theo thứ tự write->read của 2 instruction) là xong
+2) Data hazard: là truy cập vào data trước khi 1 instruction trước đó hoàn thành vc thay đổi data. Có 2 loại là read before write data hazard và load-use hazard cũng chỉ khác nhau về loại instruction. 
+Với read-before-write thì thời gian sớm nhất để dùng được data kp là khi ins thực hiện xong mà khi ALU được update giá trị xong. Và instruction bên dưới đọc data r cũng là để nhét vào ALU tiếp nên công đoạn này có thể rút ngắn bằng forward output ALU to input ALU ngay khi có loại hazard này xảy ra.
+Với load-use data hazard ta buộc bỏ 1 cycle là bubble vì nó load thì phải update xong vào mem thì mới forward vào ALU của cái tiếp nên trễ thêm 1 cycle.
+Thứ tự ta viết code cũng ảnh hưởng đến tốc độ vì 1 load-use instruction theo sau là 1 read/write instruction truy xuất cùng vùng nhớ sẽ luôn trễ 1 cycle k tránh được như trên, nếu ta viết code để tránh gặp TH này thì tốc độ sẽ nhanh hơn. Compiler sẽ tự optimize code như này khi compile.
+3) Control hazard: Th fetching next instruction như conditional branching chưa tính ra.
+Naive sẽ chờ cho instruction hoàn thành r fetch tiếp.  
+Giải pháp là thêm phần cứng có khả năng compute và compare để tính ra destination trong ID Stage nhanh hơn thì có thể giảm số lượng cycle đi phải chờ từ 2 xuống chỉ còn 1 => dùng thêm branch prediction.
+Vd: nó đoán đúng 70% trong số 17% là conditional branch thì new CPI = 1 + 30%*17% = 1.051
+TH vòng loop chẳng hạn thì nó thg có xu hướng branch là ở lại vòng loop nhiều hơn. Đó là static branch prediction. Ta dùng dynamic branch prediction thì nó lưu trạng thái của branch condition lại, nếu lần sau gặp lại branch condition đó(vòng loop) thì đoán là cái lần trước lấy => Với loop sẽ max đoán sai chỉ 2 lần đầu và cuối.
+
