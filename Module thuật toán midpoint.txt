@@ -1,0 +1,52 @@
+# Midpoint alg:
+
+-> Thuật toán midpoint là thuật toán giúp vẽ các hình trên mp tọa độ giao diện. Ta sẽ dùng nó để vẽ đường tròn trong mp tọa độ.
+
+Chia hình tròn thành 8 góc phần tám thì chỉ cần vẽ các điểm trong 1 góc phần tám và lấy đối xứng qua đường phân giác và các góc phần tám khác sẽ vẽ được điểm tương ứng trên cả 8 góc phần tám
+Do mp tọa độ pixel nên ta chỉ vẽ được vào 1 pixel là số nguyên chứ k được lẻ. Dùng thuật toán này tức là vc ta lấy xấp xỉ các điểm tọa độ nguyên xem điểm nào gần đường tròn hơn khi đường tròn cắt đoạn thẳng nối 2 điểm ở giữa.
+
+Ta vẽ 1 góc phần tư từ điểm Ai(0, R), điểm tiếp theo sang bên phải thì do độ biến thiên của x lớn hơn của y nên ta tăng xi+1 = xi + 1 và y thì phải check xem lấy yi hay yi - 1 
+Để check ta so sánh trung điểm của (xi + 1, yi) và (xi + 1, yi - 1) có thuộc đường tròn k. Nếu ngoài đường tròn, tức nằm trên điểm giao thì phải lấy điểm bên trong là (xi + 1, yi - 1) thì chỉ cần check điểm M đó có kc lớn hơn bk hay k
+M(xi + 1, yi - 1/2) thì Mx^2 + My^2 - R^2 phải so sánh với 0 = 2xi + 5/4 - yi 
+Ta gọi giá trị Mx^2 + My^2 - R^2 là P
+Khi có Pi ta có thể tính được Pi+1 nhanh hơn từ Pi là:
+Pi+1 - Pi = F(xi+1 + 1, yi+1 - 1/2) - F(xi + 1, yi - 1/2) = ...tách ez... = pi + 2xi + 3 + (yi+1 ^2 - yi ^2) - (yi+1 - yi) thì tùy vào vc:
+trước đó điểm xi,yi là gì. 
+Nếu pi < 0 tức trước đó lấy điểm bên trên thì pi+1 = pi + 2xi + 3
+Nếu pi >= 0 tức trước đó lấy điểm dưới thì pi+1 = pi + 2(xi - yi) + 5
+
+Điểm ban đầu là (0,R) thì P1 = 5/4 - R => ta tìm được tiếp pi+1 qua phương trình bậc 1 như trên rất đơn giản mà k cần giải bậc 2 tìm kc từ midpoint mới đến tâm có mà chết, cho đến khi hết góc phần tám tức đk là while(x < y)
+
+=> Sau khi có (x,y) ta vẽ thêm 8 điểm (-x,y) (x,-y) (-x,-y) (y,x) (-y,-x) (-y,x) (y,-x) 
+
+Chi tiết: https://www.youtube.com/watch?v=S2pkaHldHHE
+
+=> Thuật toán này cũng được dùng trong vẽ các thứ khác như vẽ đường thẳng vì thực tế dùng pixel nên k vẽ được đường thẳng 100% đâu mà cũng chỉ vẽ điểm gần hơn với đường thẳng và nhìn ở kc xa thì giống như ta đang vẽ đth thật
+
+While(x < y)
+  if p < 0 -> p += 2x+3 -> lấy giữ nguyên y
+  else -> p += 2*(x-y) và y--
+  x += 1
+  Vẽ 8 điểm 
+
+
+-> Bài cuối kỳ: 
+
+Băt bàn phím
+  Nếu k có phím nào thì vẽ đứng yên ban dầu
+  Nếu có phím thì bắt phím gì or đã từng gõ từ trước thì vẫn đi hướng trước
+    xóa hình tròn vị trí cũ
+    vẽ hình tròn vị trí mới
+    check nếu vị trí mới đập tường thì quay lại
+=> ta cho kích thước, vị trí ban đầu, speed di chuyển mỗi lần nó chuẩn chia hết cho nhau để khi va chạm thì so sánh bằng chuẩn luôn mà kp check gì phức tạp
+Lại quay lại bước 1 check tiếp
+
+Để vẽ đường tròn:
+Vẽ 4 điểm trước
+Khởi tạo P là 1 - bán kính vì k thể lấy lẻ 1.25 trong MIPS
+Thực hiện đoạn code thuật toán midpoint bên trên để vẽ hết cả hình
+
+Để vẽ 1 điểm:
+Vẽ trên bitmap display ez
+
+

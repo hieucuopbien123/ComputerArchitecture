@@ -252,6 +252,7 @@ thì A = -2^0 + 2^1 - 2^4 vì đầu tiên là 10 thì -2^0 vì tính từ Q0Q(-
 
 
 # Thiết kế 1 CPU có 9 instruction cơ bản
+# Thuật toán midpoint
 
 
 
@@ -300,3 +301,4 @@ Thao tác với thiết bị keyboard
 Thiết kế CPU tối ưu 9 instruction
 Cơ chế các mạch arthimetic logic thiết kế
 
+Người ta có thể dùng parity code như bài 8 CK để check tính đúng sai của dữ liệu, mỗi cặp dữ liệu nhận vào mà có parity code trùng thế tức là gửi đúng k bị thất lạc. Nó so sánh từng cặp byte xor với nhau r chuyển sang hexa chính là parity
