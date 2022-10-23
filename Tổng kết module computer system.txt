@@ -1,0 +1,24 @@
+Computer System
+
+
+# Basic
+SRAM là static RAM lo các task inside CPU và được gắn với CPU luôn. Theo thứ tự xa gần so với CPU:
+Gần CPU - Register - SRAM - DRAM - Magnetic Disk - Xa CPU
+Nói máy tính dùng 8GB RAM là đang nói DRAM của máy là 8GB (VD dùng loại DDR3). Càng gần CPU càng đắt, tốc độ càng nhanh, kích thước càng nhỏ. 
+
+Khi cần query data, nó sẽ transfer từ từ qua disk -> main mem -> cache -> CPU. VD: đầu tiên cả ứng dụng được lưu trên disk, khi chạy nó sẽ copy recently accessed and nearby items từ disk sang DRAM(gọi là gửi vào main mem). Tiếp tục copy recently accessed and nearby items từ DRAM sang SRAM(gọi là cache data gắn với CPU). Cơ chế truyền lưu từ từ như v gọi là memory hierarchy. 
+Nearby item nói ở trên phụ thuộc vào locality. Có 2 loại: temporal locality là items accessed có nguy cơ accessed again soon, thường là vòng loop or đệ quy; spatial locality thì item nearby là items gần với các items đã accessed, thường là mảng or chuỗi instruction có địa chỉ liên tiếp nhau.
+
+
+
+# Cache memory
+Nó dùng direct mapped cache để đánh dấu vị trí bởi địa chỉ. Giả sử có rất nhiều block của ứng dụng trong bộ nhớ, mỗi cái được đánh 1 địa chỉ nhưng cache chỉ có max đến 8 block. Mỗi block chỉ cần 3 bit để đánh dấu. Tức lấy address của block trong bộ nhớ %8 or hiểu là lấy 3 bit cuối của block ứng dụng để quyết định lưu vào block nào của cache. 
+Bên trong cache sẽ lưu high order bit của block data là đủ vì có thể tự compute ra address: [high order bit] + [index of block trong cache] tiết kiệm bộ nhớ. Tức cache có thể biểu diễn dạng bảng:
+Index of block cache / valid bit(data trong tag có available không) / tag(high order bit) / data(data thực tế lưu)
+1 block size = 1 word = 4 bytes
+
+Nếu cache miss thì CPU sẽ lấy data từ RAM vào mainmem sẽ lại copy cho data để update tag và data trong cache. Nếu hit nhưng tag sai thì cũng làm như miss thôi.
+
+
+
+
