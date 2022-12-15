@@ -152,4 +152,66 @@ Khi Ct load từ storage vào mainmem, address thg dùng sẽ load vào cache v�
 
 Tức là: virtual address -> PTE -> Page table + TLB -> Physical
 
+-> TLB + cache interaction:
+Nếu k có virtual mem: Physical address -> cache -> mainmem
+Nếu có virtual mem:
+- Nếu cache tag dùng physical address: Phải translate virtual address thành physical address -> tìm trong cache -> k có sẽ tìm trong mainmem -> k có sẽ tìm trong storage
+- Alternative: là khi cache dùng virtual address tag thì ta phải tìm trong cache trước -> r mới translate thành physical address (cách trước là translate rồi mới tìm trong cache).
+=> Ta chỉ xét TH đầu là transalte trước rồi mới tìm trong cache
+
+Các quá trình trung gian chỉ định hit hay miss. 
+VD: bước translate đầu tiên mà success là hit case, fail là miss case. TH miss thì nhảy đến tìm trong mainmem luôn mà kp qua từng cache vì translate thành physical address còn thất bại thì sao tìm được cái address đó trong cache. 
+Nếu cache tag dùng physical address: Physical address -> cache -> mainmem
+Có virtual mem: Virtual mem --translate --> physical address -> cache -> mainmem -> storage
+
+
+
+# Vấn đề cache
+-> Mỗi CPU có 1 cache riêng cùng refer đến 1 vùng nhớ trên mem nhưng k được đồng bộ. Nên nếu mem đã update mà 1 cache chưa báo stale để fetch lại thì data lấy bị cũ.
+Coherence defined:
+informally: mỗi lần đọc là lấy written value recently
+formally: định nghĩa ra 3 case của cache như trong slide
+VD: P1 viết r P2 đọc sau. Thì nếu kịp thời gian, P2 sẽ fetch lại trước r mới đọc
+VD: Cả 2 cái cùng viết thì luôn đảm bảo dùng cái cuối nếu đủ thời gian
+
+--> Cách để cache biết khi nào cần update => cache coherence protocol
+Sharing bus: snooping protocol => vì data luôn truyền qua bus nên share bus sẽ giúp cache biết khi nào data đổi và data đổi là gì thông qua việc kiểm soát cái bus truỳen
+VD: máy tính của ta hiện tại đang có 4 core CPU cùng dùng 1 memory RAM chung
+VD: CPU1 đổi giá trị data cache trong mem sẽ có bus activity khác và các CPU khác sẽ miss giá trị đó ngay
+Directory based protocol: các giao thức dùng chung 1 thư mục lưu trạng thái của block. Như kiểu redux global store.
+
+-> Miss penalty reduction: giảm lượng công việc khi miss xảy ra bằng cách ưu tiên trả từ cần lấy trước và thực hiện bất đồng bộ fetch phần stale còn lại.
+
+-> Pitfalls:
+VD: Xét 32 bytes direct map cache
+Giả sử trong memory thì 1 block có 4 bytes => bytes số 36 sẽ nằm ở block số 9 trong memory (36/4=9) (chú ý trong mem chứ kp trong cache), nếu lấy vào cache có mỗi 32 bytes tức 8 block từ 0 đến 7 thì 9%8 = 1 nên nếu fetch bytes số 36 về, nó phải nằm ở block 1 trong cache (nếu cần lấy về cache thì sẽ nằm ở đó)
+Xét word số 36 thì 1 word chiếm 4 bytes nên nằm ở block số 36 mà 36%8 = 4 nên nằm ở block số 4 trong cache
+
+Average memory access time AMAT
+
+Mở rộng không gian địa chỉ bằng cách phân đoạn bộ nhớ của intel k còn đúng vào thời điểm hiện tại. Ngày nay dùng 64 bit để đánh địa chỉ bộ nhớ là quá lớn và có thể lắp rất nhiều RAM vao máy mà vẫn refer tới mọi ô nhớ được 
+
+Cache dùng SRAM bán dẫn hỗ trợ tốc độ cao hơn và có giới hạn vì giá đắt. 
+
+
+
+# Nhanh:
+Address: [tag][index][offset]  =>  ref tới 1 row của cache
+Cache: [[row 1][row 2][row 3][...]] => 1 row: [valid bit][tag bit][data] => khi nói cache có 128 KB tức chỉ nói tổng phần data: 1 data = 1 block
+Memory: [block 1][block2][block 3][...vô tận...]
+
+Tag bit luôn là phần thừa lại
+
+nway set cache tức 1 set có n entries ~ chứa n block => n comparator, index field search set nào
+
+Clock rate là time for 1 cycle
+
+
+Clear dạng AMAT hay clock rate hay CPI:
+Éo quan trọng access cái gì chỉ cần biết hit case là có trong cache, misscase là memory access bị miss. Nhưng ta nên nhớ mọi access vào mem đều là access để lấy instruction. Kể cả vc đọc data cũng chỉ là load, store hay read, write instruction mà thôi. Bên cạnh các instruction lấy từ memory access, còn nhiều loại instruction khác
+AMAT = thời gian hit + thời gian miss khi memory access instruction
+
+What's the difference between CPI and effective CPI?
+The effective CPI is the base CPU plus the CPI contribution from cache misses. The cache miss CPI is the sum of the of instruction cache CPI and data cache CPI hay còn gọi là total cpi. 
+Trong TH chia ra Dcache và Icache: D-cache for load and store instruction để access data và chính là memory access, I-cache để access instruction và luôn luôn phải access vào đây nên tỉ lệ instruction là 1, sau đó mới access vào D-cache
 
