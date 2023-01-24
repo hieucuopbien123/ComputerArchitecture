@@ -18,8 +18,7 @@ Bên trong cache sẽ lưu high order bit của block data là đủ vì có th�
 Index of block cache / valid bit(data trong tag có available không) / tag(high order bit) / data(data thực tế lưu)
 1 block size = 1 word = 4 bytes
 
-Nếu cache miss thì CPU sẽ lấy data từ RAM vào mainmem sẽ lại copy cho data để update tag và data trong cache. Nếu hit nhưng tag sai thì cũng làm như miss thôi.
-
+Nếu cache miss thì CPU sẽ lấy data từ RAM vào cache sẽ lại copy cho data để update tag và data trong cache. Nếu hit nhưng tag sai thì cũng làm như miss thôi.
 Khi miss, DRAM sẽ truyền data cho cache trong CPU lưu lại.
 
 -> Phân tích hình slide 19 chapter 5:
@@ -28,11 +27,12 @@ Data size dùng tới 32 bit 1 row tức 4 bytes, nhưng khi truy cập kp lúc 
 10 bit tiếp theo là offset lấy hàng nào trong 2^10 hàng trong cache.
 20 bit tiếp theo là 20 bit đầu đánh dấu ô nhớ cần lấy. Cái này check trùng với tag hay không để biết miss hay hit. 10 bit cuối chính là index của từng row.
 Số 32 trong phần data chính là độ rộng của dây bus truyền data.
-Mỗi lần nap data từ RAM vào cache đều phải update index và tag ddeer address block của ứng dụng còn refer tới. 
-=> Quy trình: khi request address, nó lấy address/2^10 dư bao nhiêu refer vào bảng cache + tag để check nó valid hay không. Lấy tiếp bytes offset để xem lấy bytes data nào.
+Mỗi lần nap data từ RAM vào cache đều phải update tag để address block của ứng dụng còn refer tới. 
+=> Quy trình: khi request address, nó lấy address/2^10 dư bao nhiêu refer vào bảng cache + tag để check nó valid hay không. Lấy tiếp bytes offset để xem lấy bytes data nào => sai, cái này kp là khi request address trong cach e mà là khi update từ main mem vào cache
+Ở đây ta đang phân tích 1 hàng của cache có bnh bit: index là 10, tag là 20, valid là 1, data 4 byte là 32 bit => có tổng 63 bit trong 1 row ở cache
 
 --> Phân tích slide 20:
-Do có 64 blocks và 1 block 16 bytes nên address 1200 sẽ ánh xạ đến block có thứ [1200/16]=75 vì 1 address refer đến 1 bytes mà. Block thứ 75 trong cache đâu có tồn tại nên 75%64=11 => hay nó phải refer đến cache block thứ 11 xem tag có trùng không để biết hit hay miss.
+Do có 64 blocks và 1 block 16 bytes nên address 1200 sẽ ánh xạ đến block có thứ [1200/16]=75 vì 1 address refer đến 1 bytes mà. Block thứ 75 trong cache đâu có tồn tại nên 75%64=11 => hay nó phải refer đến cache block thứ 11 xem tag có trùng không để biết hit hay miss => cx là 1 cách hiểu nhưng tính toán sẽ khó
 VD: cache có 64 block thì block index 0 có thể lưu data khi refer tới block thứ 0, 64, 128,...
 
 Block trong cache [chứa 1 lượng bytes] <--- 1 address refer tới 1 byte trong block cache
@@ -41,12 +41,12 @@ Tương tự ở TH này, 1 block có 16 bytes nên cần 4 bit trong address đ
 
 -> Write Policy:
 Write through: Khi data được update, ta sẽ phải update cả cache, cả mem sẽ tốn. 
-Write back: ghi vào buffer, update gì cũng chỉ update vào buffer mà thôi, khi buffer đầy or gặp điều kiện cần thiết, nó mới update giá trị cuối cùng vào mem.
+Write back: ghi vào buffer, update gì cũng chỉ update vào buffer mà thôi, khi buffer đầy or gặp điều kiện cần thiết, nó mới update giá trị cuối cùng vào mem => sai
 
 -> BT:
 1) How many total bits are required of direct mapped cache with cache size of 16KiB và block lưu 4 words. Biết dùng 32 bit address.
 => Mỗi word tốn 4 bytes nên số lượng block cân có là: 16 KiB data tức 16*1024 bytes / 4/4 = 1024 vì 16KiB bằng 16*1024bytes. 
-Cache: [tag][10bit][4bit] => 32 - 10 - 4 = 18 => mỗi ô dùng 18 bit cho tag bit => tổng lượng tag bit là 2^10*18 
+Cache: [tag][10bit][4bit] => 32 - 10 - 4 = 18 => mỗi ô dùng 18 bit cho tag bit => tổng lượng tag bit possible là 2^10*18 => chỉ có 2^10 row nhưng tag bit thì có thể có rất nhiều vì nhiều ô nhớ cùng tag bit trên main mem có thể lưu vào cùng 1 ô trong cache 
 Ta thấy lạ vì tag bit có đến 18 bit cơ thì quá thừa nhưng thực tế Tag bit dù chỉ lưu high order nhưng luôn chiếm phần bit còn lại tức ở đây nhiều bit đầu toàn 0 nếu k dùng tới
 
 -> Tính cache miss
@@ -56,12 +56,12 @@ Ta thấy lạ vì tag bit có đến 18 bit cơ thì quá thừa nhưng thực 
 
 Ở đây nó truy cập data, query data sẽ phải truyền data qua lại giữa cpu, disk, mainmem nhưng data truyền đi trên các đường dây đó sẽ tốn các cycle.
 Slide 31: do RAM được organized 1 word wide nên nó phải get data 4 lần read 4 word lưu vào từng block, mỗi lần read tốn 15 cycle và truyền vào 4 word block qua bus cycle để truyền data 1 word wide to cache
-Nếu miss ở case này sẽ tốn 4 lần time access DRAM vì nó dùng 4wordblock nhưng chỉ 1wordwide DRAM
+Nếu miss ở case này sẽ tốn 4 lần time access DRAM vì nó lấy 4wordblock nhưng chỉ 1wordwide DRAM
 Dù v khi truyền 4 word đi bị rời rạc nên chiếm 1*4 bc
 
 VD: 4 word block, 4 word wide mem => 1+1x15+1x1=16 bus cycle
 Vì để truyền 4 word qua theo hình trong slide chapter 5 trang 32, nó cần 1 lần truy xuất 4 bộ nhớ vì đủ rộng để chứa hết 4 word trong 1 lần lấy, 1 lần để gửi nó cho cache vì đủ rộng truyền 1 cục tới cache luôn. Tức dùng 4 wordwide DRAM có thể truyền tất cả 4 word trong 1 lần
-4 word tức 16 bytes, để lấy mà mất 17 cycle tức tốc độc là 16/17=0.94B/cycle
+4 word tức 16 bytes, để lấy mà mất tổng 17 cycle tức bandwidth là 16/17=0.94B/cycle
 
 4 bank interleave memory tức là cục memory chia ra 4 cái độc lập, mỗi cái là 1 word wide nên dù nhanh ở getdata nhưng truyền vẫn tốn 4*1 bc
 
@@ -72,10 +72,10 @@ VD: laptop có 32 bit địa chỉ nhưng có tới 128 bit data tùy dòng máy
 Số cycle cần khi miss (evaluate performance average) = số lượng mem access/program x miss rate x miss penalty
 Vì mỗi lần miss sẽ phải thêm 1 lượng miss penalty cycle và trong tổng số các lần truy cập vào mem chỉ có 1 tỉ lệ miss rate là các instruction bị miss
 I cache khi miss 1 instruction phải thực hiện thêm 1 lượng cycle: 0.02 x 100 x 1 = 2 vì:
-1 là 100% vì luôn phải truy cập vào instruction với mọi lệnh
+1 là 100% vì luôn phải truy cập vào instruction với mọi lệnh, tức mọi lệnh ở program đều là access vào mem instruction
 0.02 là xác suất lệnh k tồn tại
 100 là số cycle phải thực hiện nếu bị miss
-=> Với mỗi lệnh là 100% lệnh instruction, trong đó có 0.02 tỉ lệ là miss và nếu miss sẽ dùng 100 cycle => trung bình 1 instruction bị miss thì I cache phải dùng số lượng cycle là 2
+=> Với mỗi lệnh là 100% lệnh instruction, trong đó có 0.02 tỉ lệ là miss và nếu miss sẽ dùng 100 cycle => trung bình 1 instruction bị miss thì I cache phải dùng số lượng cycle là 2 để fetch nó về cache
 
 -> Average memory access time(AMAT)
 Clock time là lượng thời gian cần dùng cho 1 cycle
@@ -97,16 +97,16 @@ Quad data rate: tách riêng DDR cho input và output
 Có 3 loại phân biệt: direct map, fullly associative, n way set associative
 Direct map như ta đã biết là dùng hash và lưu theo hash để tìm tốc độ O(1)
 
--> Fully associative lưu mỗi cục block data là 1 cục block trong cache luôn, khi cần tìm sẽ search tuyến tính, lưu vị trí nào cũng được. VD cache có 8 entry thì 1 block có thể được put vào bất cứ entry nào trong cache đó -> khi search sẽ ngốn O(n) với n là số entry trong cache, chậm hơn direct map O(1)
+-> Fully associative lưu mỗi cục block data là 1 cục block trong cache luôn, khi cần tìm sẽ search tuyến tính, lưu vị trí nào cũng được. VD cache có 8 entry thì 1 block có thể được put vào bất cứ entry nào trong cache đó -> khi search sẽ ngốn O(n) với n là số entry trong cache, chậm hơn direct map O(1) nhưng ít miss hơn
 
--> n way set thì cache lưu từng cục set và 1 block trỏ đến cả cục set đó r sau đó search tuyến tính toàn bộ data trong set. Nếu 1 set có n entry thì block put vào dựa vào việc (block number)%(số lượng set trong cache)
+-> n way set thì cache lưu từng cục set và 1 block trỏ đến cả cục set đó r sau đó search tuyến tính toàn bộ data trong set. Nếu 1 set có n entry thì block put vào dựa vào việc (block number)%(số lượng set trong cache) => éo liên quan
 
 VD: one way tức là số lượng set bằng số lượng entry
-VD: ta nhìn ký hiệu Cache Level2 4-way => tưc cache level2 dùng 4 entry trong 1 sets
+VD: ta nhìn ký hiệu Cache Level2 4-way => tưc cache level2 dùng 4 entry trong 1 sets, level 1 k có thông tin nhưng nếu miss thì sẽ search trong level2
 
 --> Với direct map ta chỉ có 1 cách để replace, với associative bắt đầu sinh ra nhiều PP để quyết định bỏ block nào khỏi cache khi 1 block mới cần được thêm vào. Dùng LRU là xóa bỏ cái k dùng đến trong ktg xa nhất.
 
--> Compare tỉ lệ hit: Direct map < Fully < n way => Slide 43(mỗi dòng là trình tự thời gian truy cập)
+-> Compare tỉ lệ hit: Direct map < Fully < n way => Slide 43(mỗi dòng là trình tự thời gian truy cập) => sai
 1) Cache có 4 blocks rời nhau, block address % 4 ra cache index để biết data của ta lưu vào block nào trong cache. 
 VD đầu tiên ta muốn access data của block number 0 thì nó nằm tại cache index vị trí 0 nhưng miss nên lấy từ main mem nhét vào cache lưu Mem[0] tại block số 0 của cache
 => Có thể thấy nó bị miss liên tục vì nhiều cục data thuộc cùng 1 block
@@ -121,7 +121,9 @@ Ta có 256 set, mỗi set 4 entry. Khi cần gọi data nó sẽ gửi tìm tron
 
 
 # Multilevel cache -> Example từ slide 49
-Base CPI là lý tưởng, số lượng cycle khi instruction toàn hit.
+Vai trò của multilevel cache thực chất là để tách biệt vẫn thỏa mãn 2 chức năng: cache level1 chú trọng hit time ngắn, cache level2 chú trọng miss rate thấp để vừa có hit time ngắn và miss rate thấp, nếu dùng 1 cache to đùng duy nhất rất khó đạt được điều này.
+
+Base CPI là lý tưởng, số lượng cycle khi instruction toàn hit => hay. Khi miss vẫn phải thực hiện lượng base CPI
 
 Cache có thể lồng là kiểu k tìm thấy trong level 1 thì tìm tiếp trong cache level 2, k có mới phải vào main mem
 
@@ -131,12 +133,20 @@ Actual effective CPI = Base CPI + miss rate * miss penalty
 
 Global miss rate = 0.5% là khi cả 2 cái cùng miss
 Khi có 2 cache sẽ xuất hiện 2 TH gây miss là: L1 miss, L2 hit và cả 2 đều miss
-CPI thực tế lúc đó = Base CPI + miss rate(L1 miss, L2 hit) * miss penalty(L1 miss, L2 hit) + miss rate(cả 2 miss) * miss penalty(cả 2 miss) => ez mà công thức tự suy ra được như kiểu xs ấy
+CPI thực tế lúc đó = Base CPI + miss rate(L1 miss, L2 hit) * miss penalty(L1 miss, L2 hit) + miss rate(cả 2 miss) * miss penalty(cả 2 miss) => ez mà công thức tự suy ra được như kiểu xs ấy => thực chất có cả tỉ lệ instruction nx
 
 
 
 # Virtual mem
-CPU - Cache - Main mem - Storage => virtual mem nằm trong main mem
+CPU - Register - Cache - Main mem - Storage => virtual mem nằm trong main mem
+
+Virtual machine: compatibility máy khác với lượng bộ nhớ physical khác; multiprogramming;
+
+Virtual cache access time nhanh hơn physical cache. Khi cache lưu virtual address mà được hit thì có thể lấy luôn data trong cache, còn cache lưu physical address sẽ phải translate mọi lúc request
+
+Write through và write back có bandwidth dùng như nhau thôi, chỉ là 2 cách implement khác chứ lưu lượng vẫn v
+
+Memory interleaving is a technique for reducing memory access time through increased bandwidth utilization of the data bus.
 
 -> Clear lại OS: 
 Khi ta chưa xét gì đến VM, 1 Ct khi chạy sẽ load tất cả data từ hard disk vào mainmem: CPU (-> Cache) có bộ MMU convert từ logical address/virtual address sang physical address -> search physical address đó trong RAM như học bên trên -> RAM trả lại data
@@ -151,6 +161,7 @@ Khi Ct load từ storage vào mainmem, address thg dùng sẽ load vào cache v�
 -> Virtual Address -> được translate thành PTE(page table entry) (bước này có tốn thêm memory) -> Tìm PTE đó trong page table lưu trong main memory (nhanh vì dùng fast cache)(dùng cái gọi là TLB - môn OS có nói nó là 1 associative mem giúp tìm nhanh) -> nếu k có sẽ tìm trong disk mới thực sự là real mem access. Đồng thời, page table và bảng TLB cũng được update phần data lấy từ disk đó.
 
 Tức là: virtual address -> PTE -> Page table + TLB -> Physical
+=> sai hết mnr
 
 -> TLB + cache interaction:
 Nếu k có virtual mem: Physical address -> cache -> mainmem
@@ -160,9 +171,12 @@ Nếu có virtual mem:
 => Ta chỉ xét TH đầu là transalte trước rồi mới tìm trong cache
 
 Các quá trình trung gian chỉ định hit hay miss. 
-VD: bước translate đầu tiên mà success là hit case, fail là miss case. TH miss thì nhảy đến tìm trong mainmem luôn mà kp qua từng cache vì translate thành physical address còn thất bại thì sao tìm được cái address đó trong cache. 
+VD: bước translate đầu tiên mà success là hit case, fail là miss case. TH miss thì nhảy đến tìm trong mainmem luôn mà kp qua từng cache vì translate thành physical address còn thất bại thì sao tìm được cái address đó trong cache, tức sai từ lúc convert bằng page table
 Nếu cache tag dùng physical address: Physical address -> cache -> mainmem
 Có virtual mem: Virtual mem --translate --> physical address -> cache -> mainmem -> storage
+
+TLB cache thg dùng cho fully associative or highly set associative. Khác với first level data cache thì thg là direct mapped or 2-4 way set associative. NN là bởi vì page size thg lớn hơn rất nhiều so với normal cache size nên khi lấy được data từ 1 page, lượng data lấy được là rất lớn nên k cần lo về spatial locality. Khi dùng nó ta có thể quan niệm rằng page fault rất hiếm xảy ra. Còn nếu dùng direct map chẳng hạn thì chắc chắn tèo vì lượng data 1 page lấy rất lớn nên miss penalty hiển nhiên cao, replace liên tục là k tốt.
+Process khác nhau sẽ có VAS riêng nên k sợ conflict miss trong TLB khi dùng fully associative. Còn cache thì nhiều process có thể dùng chung CPU chung 1 cache và khi 1 process cần refer có thể process khác đã dùng ô nhớ đó của cache rồi và gây conflict miss cao và phải fetch lại.
 
 
 
@@ -188,7 +202,6 @@ Giả sử trong memory thì 1 block có 4 bytes => bytes số 36 sẽ nằm ở
 Xét word số 36 thì 1 word chiếm 4 bytes nên nằm ở block số 36 mà 36%8 = 4 nên nằm ở block số 4 trong cache
 
 Average memory access time AMAT
-
 Mở rộng không gian địa chỉ bằng cách phân đoạn bộ nhớ của intel k còn đúng vào thời điểm hiện tại. Ngày nay dùng 64 bit để đánh địa chỉ bộ nhớ là quá lớn và có thể lắp rất nhiều RAM vao máy mà vẫn refer tới mọi ô nhớ được 
 
 Cache dùng SRAM bán dẫn hỗ trợ tốc độ cao hơn và có giới hạn vì giá đắt. 
@@ -209,9 +222,9 @@ Clock rate là time for 1 cycle
 
 Clear dạng AMAT hay clock rate hay CPI:
 Éo quan trọng access cái gì chỉ cần biết hit case là có trong cache, misscase là memory access bị miss. Nhưng ta nên nhớ mọi access vào mem đều là access để lấy instruction. Kể cả vc đọc data cũng chỉ là load, store hay read, write instruction mà thôi. Bên cạnh các instruction lấy từ memory access, còn nhiều loại instruction khác
-AMAT = thời gian hit + thời gian miss khi memory access instruction
+AMAT = thời gian hit + thời gian miss khi memory access 1 instruction
 
 What's the difference between CPI and effective CPI?
-The effective CPI is the base CPU plus the CPI contribution from cache misses. The cache miss CPI is the sum of the of instruction cache CPI and data cache CPI hay còn gọi là total cpi. 
-Trong TH chia ra Dcache và Icache: D-cache for load and store instruction để access data và chính là memory access, I-cache để access instruction và luôn luôn phải access vào đây nên tỉ lệ instruction là 1, sau đó mới access vào D-cache
-
+The effective CPI is the base CPI plus the CPI contribution from cache misses. The cache miss CPI is the sum of the instruction cache CPI and data cache CPI hay còn gọi là total cpi. 
+Trong TH chia ra Dcache và Icache: D-cache for load and store instruction để access data và chính là memory access, I-cache để access instruction và luôn luôn phải access vào đây nên tỉ lệ instruction là 1, sau đó mới access vào D-cache => cái này k liên quan gì miss hit mà đang là tổng.
+Cái này nó hơi confuse: Dcache và ICache đều là instruction cả; cache miss CPI thì có cả instruction và data và khi chúng miss thì cần 1 lượng CPI để lấy lại từ mainmem; 

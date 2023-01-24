@@ -1,0 +1,46 @@
+Giải đề:
+B1:
+a) Tính tag bit là của physical address. 
+Cách tính mới: 16KB physical memory mà 1 physical address luôn refer tới 1 bytes trong physical memory nên physical address số lượng phải là 2^14 hay dùng tới 14 bits.
+Trap pb physical address và virtual address
+Page table có 8 bytes per block thì physical mem cũng v.
+c) Nhầm giữa việc, 2^6 = 64
+Thực tế 1 page có 64 bytes tức cần 6 bit offset. Virtual address có 6 bit offset thì 10 bits để ref tới PTE hay PTE có 2^10 entries. Mỗi entries 2 bytes nên có 2KB
+Khi kết hợp Virtual và Cache, ta phải làm riêng ra. VD lấy kích thước memory / kích thước page sẽ ra số lượng page, / kích thước block sẽ ra số lượng block
+Kích thước page thì luôn tính theo 1 kiểu như v
+d) Ý nó là khi biểu diễn octal, 1 digit biểu diễn bằng 3 số. 
+Ở đây 1 block có 8 bytes tức cần 3 bit biểu diễn offset nhưng sang hệ octal thì chỉ cần 2 bits. 
+=> bỏ e trở xuống
+
+Cuối trang 13
+Bài 9 tr14 + Part C tr18
+Bài 12 tr20 ***
+B19 tr24***
+
+Đủ loại biến thể:
+CPI mà k cho hit time thì phải tính riêng hit time của ICache và DCache, công thức y hệt miss time. Khi đã tính hit như v rồi thì 
+
+Tùy biến đề bài cho CPI có thể chỉ là Base CPI, or dùng Dcache ICache, or chỉ dùng tỉ lệ bth => tự tùy biến hiểu
+
+Bài 12 trang 20
+
+2 level k thi, page size có thể là kích thước của page table trong TH 2 levels tùy biến
+
+Câu 19 trang 24 ez
+
+Virtual page number và physical page number => Đếm số virtual page và physical pages
+
+AMAT hay AMAL đều tính: hit + miss * miss rate nên nhớ là hit chứ kp phần trăm hit nếu cho thì cũng k nhét vào đây
+Còn %hit * hit + %miss * miss ta k qt
+
+Cache trong main mem
+Page table trong main mem
+TLB trong CPU
+
+Câu 12 trong đề thi 2016-2017: chia lấy dư cho 4
+Câu 13 đếm bẫy offset có 2 bit nhé
+
+Câu 14:
+Virtual address chỉ search tuyến tính tront TLB và page table, nó k heef lưu index để search, => was built for fully associative
+
+

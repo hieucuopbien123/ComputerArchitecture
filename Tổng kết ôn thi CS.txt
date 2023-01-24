@@ -1,0 +1,216 @@
+P1:
+5 component of computer; Memory hierarchy, SRAM, DRAM, Magnetic disk; 
+Locality, temporal locality, spatial locality;
+Block;
+Direct Mapped Cache; Cách lấy bit binary nhanh từ của số decimal;
+Large block size consideration;
+Write-Through, Write buffer, Write back;
+Base CPI, Effective CPI, Total CPI; DCache và ICache; 
+
+P2:
+DRAM;
+Miss penalty, bandwidth; 
+1 word wide DRAM, 4 word wide memory, 4 bank interleaved memory; 
+Advanced DRAM Organization, Burst mode; DDR, QDR;
+Memory stall cycles, CPI => AMAT;  
+Associative Cache, fully associative, n-way set associative, VD;
+Replacement policy for direct mapped and set associtive, LRU and Random; 
+Multilevel cache, VD CPI, Cache L1 và L2;
+Advanced CPUs, Software;
+
+P3 - Virtual mem
+Virtual memory; Address translation; Page fault; 
+Page table; Page table register; 
+Replacement and Writes, reference bit, dirty bit; 
+TLB; TLB misses; Page fault handler; 
+TLB + cache; 
+Mem protection; 
+Common Framework; Block placement - associativity; Finding a block, full lookup table; Replacement; Write Policy; 
+Source of misses, compulsory missses, capacity misses, conflict misses; Cache design trade-offs; 
+
+P4:
+Virtual machines; VMM;
+Interface signal; 
+FSM; 
+Cache coherence, Coherence defined, Coherence protocols; Directory based protocol;
+Invalidate snooping protocol; Memory consistency;
+Miss penalty reduction: non blocking, requested word first, hardware prefetch; 
+
+
+
+
+Copy từ magnetic disk vào main mem -> copy tiếp vào cache của CPU => nhớ là chỉ copy chứ kp dịch chuyển
+
+Direct Mapped Cache:
+Memory có rất nhiều block, mỗi block cần 5 bit để biểu diễn index đó là block nào; Cache có 8 block cần 3 bit để biểu diễn. Đương nhiên là 1 block trên cache chỉ bd được 1 block trên main mem và có những block k được bd vì k đủ chỗ, khi đó là cache miss. 
+Ta phải lấy index của block trên mem % số lượng block trên cache. VD: 11001 % 8 = 001 hay chính là 3 bit cuối của index trên mem là index trên cache cần lưu vào.
+Thế nếu cache ở ô 001 có dữ liệu thì làm sao biết được nó lưu của block nào trên main mem. Do đó cần tag bits. Tức là cache k chỉ lưu mỗi 1 cục block of data mà còn có 3 trường: index, valid bit, tag bits
+Tag bits lưu high order bit của index của block trên main mem mà nó copy lưu ở block hiện tại
+valid bits là check xem block trên cache hiện tại có data hay không thôi. 
+Tức ứng dụng muốn truy cập 1 địa chỉ trên cache là block address sẽ cần [tag][index] => để xác định dòng nào của cache và cũng là index của block chứa data đó trên memory
+
+Address: [10][101] 
+Cache: [101][... 7 block khác]
+Cache thực tế là 1 bảng:
+index validbit tagbit data
+101   1        10     Mem[10101]
+...   ...      ...    ...
+Main mem: [10101 => có thể trỏ tới 101 trên cache][11101 => 101 trên cache0][100100 => 100 trên cache][..các block khác...]
+=> Ngoài ra còn có [byte offset] ở cuối nx. VD phần data là 32 bit tức 4 bytes là 2 words. Byte offset chỉ quan tâm đến bytes và cần 2 bit byte offset để check điều này
+
+Cách tính nhanh tìm bit binary mà k cần đổi sang binary.
+VD: 1 address là 1200. cache có 64 block mà 16 bytes/block. Tức là index bit là 6, byte offset là 4. 32 bit tổng nên 22 bit là tag. Và ta muốn lấy bit từ 4 tới 9 (nên nhớ bit bắt đầu đếm từ 0).
+VD a có 10 bit, ta muốn lấy 3 bit cuối thì lấy a%(2^3), lấy 7 bit từ trái qua thì a/2^3
+Ở đây chỉ cần (1200/16)%64 = 11 là block trên cache chứa address này
+
+=> Thực tế: 1 word = 4 bytes
+
+CPU khi bị miss sẽ bị stall pipeline phải chờ fetch xong nên thực hiện bị lâu hơn
+Thực tế, nói cache miss và fetch tiếp từ mem chỉ là 1 phần nhỏ, đúng hơn phải là bất cứ 1 bộ nhớ trung gian nào cx đều có thể miss và nó fetch lại từ higher level trong hierarchy
+
+Effective CPI = Base CPI + Cache Miss CPI
+
+Write back nó phức tạp hơn:
+Đầu tiên khi write nó sẽ update block trong cache và lưu trữ data bảo rằng block nào bị dirty ở trong mem; Khi block đó bị replace(vì full và phải out ra để lấy cái khác) thì có 2 cách: 1 là viết vào mem rồi thực hiện tiếp, đảm bảo mem uptodate - Còn 2 là cũng dùng buffer memory và khi bị replace, mọi data trong buffer sẽ write vào mem r thực hiện tiếp, lúc này mọi thứ cần dùng block đều chỉ lấy ở buffer đem lại tốc độ cao hơn, buffer đầy mới ghi vào mainmem; 
+=> Tức write back thuần chỉ khác write through thuần là k update ngay mà đánh dấu block dirty trong mem mà thôi. 
+=> Đó là write back khi hit, khi miss nó vẫn phải fetch block lưu instruction store rồi lại thực hiện tiếp thôi. Write through khi miss cx v nhưng ít hơn vì nó viết thg xuyên hơn nên instruction này thg hit. 
+
+Write through và write back là các chế độ của Dcache, có cái hỗ trợ, có cái không
+
+Có cache phần data chứa nhiều block khiến cho nó vừa lưu block offset, byte offset luôn
+
+Qua slide 29, ta hiểu rõ hơn:
+Mỗi address trỏ đến 1 bytes trong cache, nhưng mỗi khi cache lấy data từ main mem, nó sẽ lấy hẳn 1 block. 
+Miss penalty = số cycle for address transfer + số cycle access DRAM + số cycle transfer data
+=> address từ cache truyền tới mem để lấy, đang miss và mem sẽ lấy từng word xếp lần lượt trong mem để truyền đi (giả sử DRAM chỉ 1 word wide)(xảy ra ở trong mem), lấy được data nó sẽ gửi lại về cache lần lượt theo thứ tự (xảy ra ở trong bus) => đó là 3 case và công thức ntn phụ thuộc vào loại và kích thước của DRAM => miss penalty là số cycle từ lúc truyền address tới lúc lấy lại data chuẩn về cache mà thôi.
+Bandwidth = số bytes / số lượng cycles cần thiết trong TH miss => nói tới bandwidth là tổng bandwidth chứ k chỉ bus của main mem
+
+P2:
+DRAM: fixed width, clock bus slower than CPU bus; 
+
+Chú ý pb: 4 bank 1 word mem, tức memory có 4 cục, mỗi cục 1 word và cả 4 dùng chung 1-word bus; 4 word mem thì mem chỉ có 1 cục, cục đó to bằng 4 word và bus cũng v.
+Pitfalls tránh nhầm: Mỗi 1 lần access vào main mem là luôn lấy hẳn 1 block để lưu vào cache, mỗi 1 lần truyền trên bus để gửi data từ main mem vào cache chỉ truyền được 1 word mà thôi.
+=> Điều này là operation ở phía mainmem, người sx họ làm main mem như nào thì như v, k nói đến cache
+
+Memory stall cycle = Instructions / program x miss rate x miss penalty => chú ý phạm vi, nói tới CPI là chỉ nói tới cycle trong 1 instruction, còn các cái này là số lượng cycle trong 1 set các instruction
+CPI = Base CPI + Miss cycle per instruction ICache + Miss cycle per instruction DCache
+AMAT = hit time + thời gian(miss rate x miss penalty) => đang nói tới 1 instruction
+Time của 1 lượng cycle = chu kỳ clock x số cycle
+
+=> Tổng kết mọi công thức
+Clock rate = 1 / Clock cycle time
+Time của n cycle = Clock cycle time x n
+
+Effective CPI = Base CPI + Cache miss CPI
+
+Miss penalty = số cycle for address transfer + số cycle access DRAM + số cycle transfer data
+Bandwidth = số bytes / số lượng cycles cần thiết lấy lượng bytes đó trong TH miss;
+
+AMAT = hit time + Time của(miss rate x miss penalty)
+Memory stall cycle = Instructions / program x miss rate x miss penalty
+CPI = Base CPI + Miss cycle per instruction ICache + Miss cycle per instruction DCache
+
+Nếu k chia ra DCache và ICache thì việc tính CPI thì có thể coi tính CPI là tính effective CPI ấy, như nhau thôi
+
+=> Mô tả: 
+Effective CPI là số lượng cycle cơ bản bằng lượng base + lượng miss thôi vì nó chỉ tính phần có ích xử lý miss. Khái niệm này có từ lúc mới học. 
+Về sau nó chia ra làm ICache và DCache thì CPI = lượng base + lượng cycle miss của cả 2 loại cache
+
+Memory stall cycle là lượng cycle khi miss tính theo tỉ lệ các thứ, còn miss penalty tương tự nhưng tính theo từng phần cộng lượng cycle cần thiết lại. 2 cái là 1.
+Miss penalty nó đi với bandwidth là lượng bytes có được trong 1 cycle miss.
+Memory stall cycle là lượng cycle cả ứng dụng, miss penalty ta đang tính lượng cycle cần dùng khi 1 instruction bị miss.
+
+AMAT là toàn diện nhất của CPU: nó tính tới hit time + miss time mà
+
+Fully associative có comparator per entry tức là các entry có thể được ss với nhau, tức chúng có thể được sắp xếp tăng hay giảm dần để phục vụ search, vc làm như v khiến nó phức tạp và giá cao.
+
+Slide 42 đem lại 1 thông tin quan trọng: 1 set chứa n entries, mỗi entry gồm 2 trường là tag bit và data, cả valid bit nữa nên như 1 row bth của cache ấy
+1-way set associative thì ý hệt như bình thường chả dùng gì và vẫn phải đánh số block, block address xác định đúng index block nào cần lưu vào
+8 way set trong hình khi mà có tổng cộng cũng chỉ 8 block, lúc này sẽ coi như chỉ có 1 set duy nhất, thì đó chính là fully associative, block bất kỳ có thể chứa ở entries nào cũng được nên cứ xếp lần lượt theo thứ tự mà chả cần quan tâm xếp vào index nào
+Các loại n-way set khác thì đánh số set, khi đó block index sẽ xác định set nào rồi sau đó search n entry chay.
+
+Như v có 3 loại: direct mapped cache, n-way set associative, fully associative.
+Fully associative tốt nhất vì miss ít nhất nhưng đắt đỏ vì có n-comparator, tức duyệt tuyến tính tất cả thì rất đắt khi n lớn dù miss ít.
+Điều này khiến cho, số lượng way càng lớn làm cho missrate giảm đi nhưng nó k tuyến tính, đến 1 mức nào đó sự khác biệt k đáng kể nhưng giá tiền thì rất đắt nếu n tiếp tục tăng. 
+
+Slide 46 cho ta hiểu thêm vài thứ là cái index trỏ tới cho ta biết được block nào thì bh là biết được set nào, sau đó tag bit sẽ compare với tag bit của mọi entry trong set 1 cách đồng thời nên tốc độ vẫn rất nhanh
+
+Multilevel cache nó đang nói đến việc cục cache mở rộng ra dần nhiều level để lưu nhiều hay ít, giảm thiểu vc query tới main mem
+
+TGMK => cũng là 2^40 2^30 2^20 2^10
+m u n 
+
+TLB dùng associative được. Khi đó nó dùng set lưu từng entries là các tag/validbit/data. Thực tế điều này làm giảm missrate vì đĩa cứng khi cần data vào 1 chỗ sẽ chia lấy dư ra index để gán. Nếu 2 cái trùng index thì chỉ 1 cái được lưu dẫn tới miss lớn. Vc dùng set ở trong TLB sẽ khiến nó giảm missrate đi khi 1 index có n block có thể lưu và chọn thuật toán LRU để replacement sẽ giảm tỉ lệ miss.
+
+Advanced CPUs ý nói về việc các instruction độc lập có thể thực hiện tiếp khi cache miss mà k cần chờ, chỉ các instruction phụ thuộc mới phải chờ thôi, vì nó phụ thuộc vào data flow khi sử dụng nên rất khó để phân tích
+Về mặt phần mềm thì nó miss hay không phụ thuộc vào thuật toán cũng như compiler optimization for mem access.
+
+Virtual mem 2 slide đầu chỉ ý nói là:
+Hard disk còn được gọi là secondary storage
+Virtual mem cũng là 1 phần main mem và được quản lý bởi CPU + OS
+Program share main mem chung nhưng mỗi program đều có 1 phần private virtual address space riêng lưu code và data mà các programs khác k thể truy cập
+Cơ chế của nó y hệt cache bình thường, block trong cache thì đây là page trong virtual mem, miss thì là page fault mà thôi
+Khi sử dụng: CPU có MMU sẽ translate virtual address sang physical address (address thực sự trong main mem còn virtual address là address trong virtual mem) và truy cập tiếp data trong main mem dựa vào physical address đó. Thực tế cái này nó độc lập với main mem mà nó là specific cho ứng dụng, nó chỉ đơn giản là trỏ tới các phần ứng dụng thg dùng, address nó trỏ tới có thể là main mem, có thể hard disk. Nếu có trên main mem, valid bit là 1, nếu chỉ có trên disk storage, validbit là 0, khi trỏ tới ô có valid bit là 0, nó sẽ page fault.
+
+Virtual memory nó k có vai trò như cache làm tăng tốc độ mà nó chỉ có vai trò giả định rằng máy có rất nhiều memory nhưng memory ta nhìn thấy đó chỉ là virtual mà thôi. Tức nó đang thao tác phía main mem, thay vì thao tác với main mem trực tiếp, ta đang thao tác với virtual mem. Thực tế virtual mem cũng k tồn tại, vì mỗi lần nói là lấy virtual mem tại vị trí virtual address cũng chỉ là convert sang physical address và lấy trong main mem mà thôi. Còn virtual mem trông nó lớn hơn thì thực ra là nếu miss trong main mem sẽ lấy trong disk ấy mà.
+Thực tế vẫn là có 1 phần riêng của main mem có vai trò lưu riêng các thành phần của ứng dụng gọi là page. 
+Với các ứng dụng hiện nay đều dùng bộ nhớ ảo, địa chỉ của nó đều là virtual và cần được convert sang physical để lấy trong main mem. Nó hoàn toàn k lưu data mẹ gì cả mà chỉ là 1 cách khác để refer address lấy trên main mem convert bằng 1 cái page table. Rất đơn giản.
+
+Break mind: physical memory là nói tới main mem và hard disk.
+Page Table Register là thứ nằm trong CPU trỏ đến page table lưu trong physical memory vì CPU cần định vị cái page table của từng ứng dụng nằm ở đâu.
+Page table trong main mem cũng chỉ là 1 bảng có các row ánh xạ từ virtual sang physical kèm dirty bit, valid bits,... Ở trong harddisk thì nó trỏ tới swap space trên disk. 
+
+Lúc này main mem như là cache của disk v, nên có thể LRU + chia nway associative được thoải mái => cái bảng PTE liên kết với bộ nhớ trên mem, cái PTE có thể associative được rằng 1 virtual address, 1 row có nhiều page ở đó.
+Cứ access vào page nào thì reference bit là 1, sau 1 chu kỳ cố định OS reset nó về 0, khi về 0 thì nó có thể bị replace vì k được dùng recently. 
+Để write khả thi, nó chỉ block cái cần dùng và sử dụng write back, write và dùng luôn + set dirty bit trong PTE = 1 thay vì sửa ngay trên hard disk. Ta chỉ cần sửa dirtybit trong PTE là xong mà k lo gì khác vì VAS chỉ dùng riêng ứng dụng này nên k sợ ứng dụng khác dùng data trong hard disk bị stale.
+
+TLB nằm trong CPU và bé hơn để nhanh hơn PTE trong main mem; 
+
+TLB misses là nó đang nói tới page k có trong TLB:
+1) Page có trong PTE của main mem thì fetch từ đó
+2) Page cũng k có trong PTE của main mem thì page fault và OS phải fetch update nó
+=> Sau cùng cả 2 case phải update TLB cái page đó. 
+
+Khi kết hợp TLB với cache, ta thg dùng kiểu xp từ virtual address r convert sang physical address search tiếp trong cache(cả 2 cùng 32 bit) như v cache vẫn lưu physical address như bth. Nếu làm ngc lại là cache lưu virtual address cx đc nhưng sẽ phức tạp. 
+
+Phần gần cuối nói mơ hồ cũng chỉ là các tài nguyên vật lý như page table, interrupt, IO chỉ accessible in kernel mode qua priviledged instructions
+
+Interface signal kiểu tương tác ntn, write và read data từ CPU sang cache độ rộng bus là 32 bit vì nó thao tác với từng words 4 bytes, còn write và read data từ cache sang memory có độ rộng bus là 128 bit vì nó thao tác với từng block có 4 words.
+
+FSM sử dụng để control state của cache được. State của cache đổi ở mỗi clock edge, là giá trị binary, được lưu trong register, next state = f(currentstate, input)
+
+Cache coherence là vấn đề 2 CPU core có 2 cache khác nhau cùng request đến 1 block trong main mem => chứ kp 2 ứng dụng vì 2 ứng dụng cùng 1 CPU, 1 cache thì vẫn ok mà.
+
+Invalidate snooping protocol là khi có lệnh write, sẽ chỉ cho duy nhất 1 CPU được access vào cache đó, đồng thời broadcase 1 cái message trên bus xóa mọi block đó trong các cache khác, mọi cache khác sẽ thành miss hết cái block đó và buộc phải fetch lại khi dùng.
+
+Memory consistency: Lệnh write chỉ thực sự kết thúc khi chắc chắn mọi processor khác read nó sẽ luôn trả ra giá trị mới nhất vừa write; processor có thể reorder read để optimize nhưng k thể reorder các lệnh write để đảm bảo lệnh write luôn đúng thứ tự.
+
+Break mind bài tập VM:
+B1:
+Consider a system with a 32-bit logical address space. If the page size in such a system is 4 KB (2^12), then a page table may consist of up to 1 million entries (2^32/2^12). Assuming that each entry consists of 4 bytes, each process may need up to 4 MB of physical address space for the page table alone.
+Ta hiểu là address có 32 bit, mỗi address chỉ trỏ tới 1 bytes, 1 cụm các address cùng trỏ tới 1 entries trong page table, chúng giống nhau ở tag bit và chỉ khác nhau ở byte offset, lượng bytes offset đó là để trỏ tới từng bytes trong main mem.
+Page size là 4KB=2^12B mà mỗi address trỏ tới 1 bytes nên cần 12 bit off set và 20 bit trỏ tới page table entries và có tới 2^20 entries, mỗi entries 4 bytes nên 2^24 B = 4MB ez
+
+B2: Bài này break mind nhiều thứ của B1 => BT1 của thầy về VM
+8 bit reverse là của PTE tức chỉ còn 3 bytes là trỏ tới physical mem. Nên nhớ page table chỉ có bit + physical mem address chứ k lưu tag hay index gì cả tức cả 24 bits đều là trỏ đi tới 1 page trong physical mem => mà 1 page có 16KB = 2^14 bytes => 2^14*2^24 = 2^38 B là kích thước của physical mem largest
+Mặc dù 1 entries có 24 bits trỏ tới physical mem nhưng address lại có tới 54 bits, mỗi address trỏ tới 1 bytes, page size là 2^14 tức 14 bits dùng offset, 40 bits trỏ tới PTE => có 2^40 PTE => kích thước page table là 2^40*4bytes = 2^42 bytess
+
+
+Dạng công thức CPI, miss hit AMAT các thứ:
+Block size càng lớn thì miss rate giảm theo spatial locality. Nhưng cache fixed size mà block size tăng làm cho số lượng block giảm tức số chia sẽ nhỏ hơn và cạnh tranh cao hơn làm tăng miss rate. Tức block size khi lớn quá cx k tốt.
+DRAM fixed width và dùng clock bus chậm hơn CPU bus.
+Pb: Effective CPI, CPI, memory stall cycle, miss penalty, AMAT, bandwidth. 
+Để tính CPI ta k tính lượng cycle tổng mà tính lượng cycle per instruction nên phải dùng base CPI + 1*miss rate*miss penalty là giả sử có 1 instruction thì nó mất bnh cycle khi tỉ lệ miss xảy ra or cục thứ 2 có thể là với 2 loại cache I và D => cứ tính cache là hiểu như này
+CPI của multilevel cache, ta phải hiểu là cái cache nào là cái có tỉ lệ miss đang xét
+Khi sử dụng TLB, nó có tag bit, index bit, offset. Còn sử dụng page table thuần nó chỉ có index với offset là xong vì TLB nhỏ hơn Pagetable nhiều nên k chứa hết được vì nhỏ hơn và cần tag bit để biết nó tương tứng với địa chỉ nào trong page table. 
+
+Effective CPI = Base CPI + Cache miss CPI (giả định có 1 instruction bất kỳ với xs instruction đó là miss thì cycle tốn là bnh) = Base CPI + tỉ lệ * miss rate * số cycle
+(Hình như chỉ tính với DCache)
+
+CPI = Base CPI + Cache miss CPI ICache + Cache miss CPI DCache  => cái cache miss CPI là = miss rate * tỉ lệ * số cycle => miss rate k nói thì 2 cache bằng nhau, tỉ lệ thì ICache luôn là 1, còn lại là Dcache đề bài phải cho tỉ lệ instruction là bnh
+Memory stall cycle = tỉ lệ instruction * miss rate * số cycle khi thực hiện 1 instruction bị miss
+Miss penalty = số cycle khi thực hiện 1 instruction bị miss
+AMAT = hit time + miss rate * miss penalty time (thời gian access mem 1 instruction) (chú ý k có tỉ lệ instruction ở đây gì cả nhé).
+Bandwidth là TH tách riêng. Cái miss penalty khi đó là = transfer address + xử lý trong DRAM + transfer lại data => bandwidth khi đó là số bytes lấy về từ main mem / miss penalty
+
+
