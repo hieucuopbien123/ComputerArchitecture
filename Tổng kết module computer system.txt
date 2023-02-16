@@ -228,3 +228,6 @@ What's the difference between CPI and effective CPI?
 The effective CPI is the base CPI plus the CPI contribution from cache misses. The cache miss CPI is the sum of the instruction cache CPI and data cache CPI hay còn gọi là total cpi. 
 Trong TH chia ra Dcache và Icache: D-cache for load and store instruction để access data và chính là memory access, I-cache để access instruction và luôn luôn phải access vào đây nên tỉ lệ instruction là 1, sau đó mới access vào D-cache => cái này k liên quan gì miss hit mà đang là tổng.
 Cái này nó hơi confuse: Dcache và ICache đều là instruction cả; cache miss CPI thì có cả instruction và data và khi chúng miss thì cần 1 lượng CPI để lấy lại từ mainmem; 
+
+-> Tính rotational delay trên đĩa cứng thực chất là chia đôi ra vì có 2 mặt, ta chỉ tính transfer data gì đó trên 1 mặt 
+
