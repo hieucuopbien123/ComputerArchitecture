@@ -81,7 +81,7 @@ Có cache phần data chứa nhiều block khiến cho nó vừa lưu block offs
 
 Qua slide 29, ta hiểu rõ hơn:
 Mỗi address trỏ đến 1 bytes trong cache, nhưng mỗi khi cache lấy data từ main mem, nó sẽ lấy hẳn 1 block. 
-Miss penalty = số cycle for address transfer + số cycle access DRAM + số cycle transfer data
+Miss penalty = số cycle for address transfer + số cycle access DRAM + số cycle transfer data về
 => address từ cache truyền tới mem để lấy, đang miss và mem sẽ lấy từng word xếp lần lượt trong mem để truyền đi (giả sử DRAM chỉ 1 word wide)(xảy ra ở trong mem), lấy được data nó sẽ gửi lại về cache lần lượt theo thứ tự (xảy ra ở trong bus) => đó là 3 case và công thức ntn phụ thuộc vào loại và kích thước của DRAM => miss penalty là số cycle từ lúc truyền address tới lúc lấy lại data chuẩn về cache mà thôi.
 Bandwidth = số bytes / số lượng cycles cần thiết trong TH miss => nói tới bandwidth là tổng bandwidth chứ k chỉ bus của main mem
 
@@ -175,7 +175,7 @@ Khi kết hợp TLB với cache, ta thg dùng kiểu xp từ virtual address r c
 
 Phần gần cuối nói mơ hồ cũng chỉ là các tài nguyên vật lý như page table, interrupt, IO chỉ accessible in kernel mode qua priviledged instructions
 
-Interface signal kiểu tương tác ntn, write và read data từ CPU sang cache độ rộng bus là 32 bit vì nó thao tác với từng words 4 bytes, còn write và read data từ cache sang memory có độ rộng bus là 128 bit vì nó thao tác với từng block có 4 words.
+Interface signal kiểu tương tác ntn, write và read data từ CPU sang cache độ rộng bus là 32 bit vì nó thao tác với từng words 4 bytes, còn write và read data từ cache sang memory có độ rộng bus là 128 bit vì nó thao tác với từng block có 4 words, nếu main mem thiết kế 4 interbank or 4 word wide
 
 FSM sử dụng để control state của cache được. State của cache đổi ở mỗi clock edge, là giá trị binary, được lưu trong register, next state = f(currentstate, input)
 
@@ -187,12 +187,22 @@ Memory consistency: Lệnh write chỉ thực sự kết thúc khi chắc chắn
 
 Break mind bài tập VM:
 B1:
-Consider a system with a 32-bit logical address space. If the page size in such a system is 4 KB (2^12), then a page table may consist of up to 1 million entries (2^32/2^12). Assuming that each entry consists of 4 bytes, each process may need up to 4 MB of physical address space for the page table alone.
+Consider a system with a 32-bit logical address space. If the page size in such a system is 4 KB (2^12), then the page table may consist of up to 1 million entries (2^32/2^12). Assuming that each entry consists of 4 bytes, each process may need up to 4 MB of physical address space for the page table alone.
 Ta hiểu là address có 32 bit, mỗi address chỉ trỏ tới 1 bytes, 1 cụm các address cùng trỏ tới 1 entries trong page table, chúng giống nhau ở tag bit và chỉ khác nhau ở byte offset, lượng bytes offset đó là để trỏ tới từng bytes trong main mem.
 Page size là 4KB=2^12B mà mỗi address trỏ tới 1 bytes nên cần 12 bit off set và 20 bit trỏ tới page table entries và có tới 2^20 entries, mỗi entries 4 bytes nên 2^24 B = 4MB ez
 
+Đề bài nói là không gian virtual là 32 bit chứ kp địa chỉ là 32 bit cho nên nó là bao đủ không gian luôn
+Cache size khác page size
+Ngáo vl, hiểu nhâm sang tag bit các thú, logical address làm gì có tag bit
+
+OK chưa, page size là kích thước 1 page.
+Page table k lưu data nên k liên quan page size
+=> *********** hay, đúng bản chất ***********
+=> Chứ k ai nói page table size cả
+
 B2: Bài này break mind nhiều thứ của B1 => BT1 của thầy về VM
 8 bit reverse là của PTE tức chỉ còn 3 bytes là trỏ tới physical mem. Nên nhớ page table chỉ có bit + physical mem address chứ k lưu tag hay index gì cả tức cả 24 bits đều là trỏ đi tới 1 page trong physical mem => mà 1 page có 16KB = 2^14 bytes => 2^14*2^24 = 2^38 B là kích thước của physical mem largest
+=> Hay luôn, chú ý kp page table size vì page table k lưu data
 Mặc dù 1 entries có 24 bits trỏ tới physical mem nhưng address lại có tới 54 bits, mỗi address trỏ tới 1 bytes, page size là 2^14 tức 14 bits dùng offset, 40 bits trỏ tới PTE => có 2^40 PTE => kích thước page table là 2^40*4bytes = 2^42 bytess
 
 
@@ -212,5 +222,13 @@ Memory stall cycle = tỉ lệ instruction * miss rate * số cycle khi thực h
 Miss penalty = số cycle khi thực hiện 1 instruction bị miss
 AMAT = hit time + miss rate * miss penalty time (thời gian access mem 1 instruction) (chú ý k có tỉ lệ instruction ở đây gì cả nhé).
 Bandwidth là TH tách riêng. Cái miss penalty khi đó là = transfer address + xử lý trong DRAM + transfer lại data => bandwidth khi đó là số bytes lấy về từ main mem / miss penalty
+=> ******* lại hay nx *********
+
+
+PTE k chứa index bit mà chứa các bit protection + bit data là physicaladdress
+TLB có các bit giống cache
+Data lưu trong TLB và page table chính là physical address nhưng trừ đi byteoffset bit 
+
+
 
 

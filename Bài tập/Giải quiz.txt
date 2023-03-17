@@ -43,4 +43,5 @@ Câu 13 đếm bẫy offset có 2 bit nhé
 Câu 14:
 Virtual address chỉ search tuyến tính tront TLB và page table, nó k heef lưu index để search, => was built for fully associative
 
+********* Bài 12 trang 20 cho thấy cache nó éo lưu gì tag bit luôn. Tính gì kích thước cache kbh lq đến tag bit **********
 

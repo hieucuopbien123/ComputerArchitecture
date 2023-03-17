@@ -19,7 +19,7 @@ Index of block cache / valid bit(data trong tag có available không) / tag(high
 1 block size = 1 word = 4 bytes
 
 Nếu cache miss thì CPU sẽ lấy data từ RAM vào cache sẽ lại copy cho data để update tag và data trong cache. Nếu hit nhưng tag sai thì cũng làm như miss thôi.
-Khi miss, DRAM sẽ truyền data cho cache trong CPU lưu lại.
+Khi miss, DRAM sẽ truyền data cho cache cua CPU lưu lại.
 
 -> Phân tích hình slide 19 chapter 5:
 Khi biết address và ta đi tìm nó trong cache trước. Tùy vào kích thước block mà số bit có thể khác nhau. Ở đây ta dùng 1 block có 4 bytes. 1 address block có 32 bit nên tag bit là 32 - 10 - 2 = 20
@@ -49,6 +49,8 @@ Write back: ghi vào buffer, update gì cũng chỉ update vào buffer mà thôi
 Cache: [tag][10bit][4bit] => 32 - 10 - 4 = 18 => mỗi ô dùng 18 bit cho tag bit => tổng lượng tag bit possible là 2^10*18 => chỉ có 2^10 row nhưng tag bit thì có thể có rất nhiều vì nhiều ô nhớ cùng tag bit trên main mem có thể lưu vào cùng 1 ô trong cache 
 Ta thấy lạ vì tag bit có đến 18 bit cơ thì quá thừa nhưng thực tế Tag bit dù chỉ lưu high order nhưng luôn chiếm phần bit còn lại tức ở đây nhiều bit đầu toàn 0 nếu k dùng tới
 
+Điều qtr nhất rút ra ở đây chỉ là cache size chỉ tính phần data thôi
+
 -> Tính cache miss
 1 bus cycle for address transfer
 15 bus cycle per DRAM access
@@ -63,7 +65,7 @@ VD: 4 word block, 4 word wide mem => 1+1x15+1x1=16 bus cycle
 Vì để truyền 4 word qua theo hình trong slide chapter 5 trang 32, nó cần 1 lần truy xuất 4 bộ nhớ vì đủ rộng để chứa hết 4 word trong 1 lần lấy, 1 lần để gửi nó cho cache vì đủ rộng truyền 1 cục tới cache luôn. Tức dùng 4 wordwide DRAM có thể truyền tất cả 4 word trong 1 lần
 4 word tức 16 bytes, để lấy mà mất tổng 17 cycle tức bandwidth là 16/17=0.94B/cycle
 
-4 bank interleave memory tức là cục memory chia ra 4 cái độc lập, mỗi cái là 1 word wide nên dù nhanh ở getdata nhưng truyền vẫn tốn 4*1 bc
+4 bank interleave memory tức là cục memory chia ra 4 cái độc lập, mỗi cái là 1 word wide nên dù nhanh ở getdata nhưng truyền về vẫn tốn 4*1 bc
 
 4 bank 4 word thường dùng nhất vì họ thường chia ra nhiều bank và ảnh hưởng nhiều thứ.
 VD: laptop có 32 bit địa chỉ nhưng có tới 128 bit data tùy dòng máy thiết kế fix cứng r.
@@ -111,7 +113,7 @@ VD: ta nhìn ký hiệu Cache Level2 4-way => tưc cache level2 dùng 4 entry tr
 VD đầu tiên ta muốn access data của block number 0 thì nó nằm tại cache index vị trí 0 nhưng miss nên lấy từ main mem nhét vào cache lưu Mem[0] tại block số 0 của cache
 => Có thể thấy nó bị miss liên tục vì nhiều cục data thuộc cùng 1 block
 2) Khi gom vào 1 set có nhiều entry thì sẽ giảm thiểu số lượng miss
-3) Khi dùng fully associative thực tế là 1 set chứa cả n entry luôn nên k miss, lợi được thời gian query từ main mem và cache nhưng phải duyệt tuyến tính trong cache
+3) Khi dùng fully associative thực tế là 1 set chứa cả n entry luôn nên k miss, lợi được thời gian query từ main mem và cache nhưng phải duyệt tuyến tính trong cache, thực chất ss bit cũng là tuyến tính nhưng nhanh hơn thôi
 
 => Dù tăng số lượng way sẽ làm giảm missrate nhưng nó k linear. Khi tăng số lượng entry trong 1 set tới 1 lượng, nó bắt đầu giảm ít hơn và k đáng để làm v nữa. Tức giảm tiếp số way nó k giảm tiếp miss rate nhiều nữa nên k đáng kể ấy, trong khi số lượng duyệt tuyến tính tăng nên k tốt. Thg thì đến 4 way thôi
 
@@ -175,7 +177,7 @@ VD: bước translate đầu tiên mà success là hit case, fail là miss case.
 Nếu cache tag dùng physical address: Physical address -> cache -> mainmem
 Có virtual mem: Virtual mem --translate --> physical address -> cache -> mainmem -> storage
 
-TLB cache thg dùng cho fully associative or highly set associative. Khác với first level data cache thì thg là direct mapped or 2-4 way set associative. NN là bởi vì page size thg lớn hơn rất nhiều so với normal cache size nên khi lấy được data từ 1 page, lượng data lấy được là rất lớn nên k cần lo về spatial locality. Khi dùng nó ta có thể quan niệm rằng page fault rất hiếm xảy ra. Còn nếu dùng direct map chẳng hạn thì chắc chắn tèo vì lượng data 1 page lấy rất lớn nên miss penalty hiển nhiên cao, replace liên tục là k tốt.
+TLB cache thg dùng cho fully associative or highly set associative. Khác với first level data cache thì thg là direct mapped or 2-4 way set associative. NN là bởi vì page size thg lớn hơn rất nhiều so với normal cache size nên khi lấy được data từ 1 page, lượng data lấy được là rất lớn nên k cần lo về spatial locality. Khi dùng nó ta có thể quan niệm rằng page fault rất hiếm xảy ra. Còn nếu dùng direct map chẳng hạn thì chắc chắn tèo vì lượng data 1 page lấy rất lớn nên miss penalty hiển nhiên cao, replace liên tục là k tốt. Nch là dùng full associative cho TLB để giảm miss rate tối thiểu vì mis pen cao
 Process khác nhau sẽ có VAS riêng nên k sợ conflict miss trong TLB khi dùng fully associative. Còn cache thì nhiều process có thể dùng chung CPU chung 1 cache và khi 1 process cần refer có thể process khác đã dùng ô nhớ đó của cache rồi và gây conflict miss cao và phải fetch lại.
 
 
@@ -211,7 +213,7 @@ Cache dùng SRAM bán dẫn hỗ trợ tốc độ cao hơn và có giới hạn
 # Nhanh:
 Address: [tag][index][offset]  =>  ref tới 1 row của cache
 Cache: [[row 1][row 2][row 3][...]] => 1 row: [valid bit][tag bit][data] => khi nói cache có 128 KB tức chỉ nói tổng phần data: 1 data = 1 block
-Memory: [block 1][block2][block 3][...vô tận...]
+Memory: [block 1][block2][block 3][...vô tận...] => thật ra giống cache
 
 Tag bit luôn là phần thừa lại
 
