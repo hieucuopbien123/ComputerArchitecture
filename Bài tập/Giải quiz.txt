@@ -1,16 +1,24 @@
 Giải đề:
 B1:
-a) Tính tag bit là của physical address. 
-Cách tính mới: 16KB physical memory mà 1 physical address luôn refer tới 1 bytes trong physical memory nên physical address số lượng phải là 2^14 hay dùng tới 14 bits.
-Trap pb physical address và virtual address
-Page table có 8 bytes per block thì physical mem cũng v.
-c) Nhầm giữa việc, 2^6 = 64
-Thực tế 1 page có 64 bytes tức cần 6 bit offset. Virtual address có 6 bit offset thì 10 bits để ref tới PTE hay PTE có 2^10 entries. Mỗi entries 2 bytes nên có 2KB
-Khi kết hợp Virtual và Cache, ta phải làm riêng ra. VD lấy kích thước memory / kích thước page sẽ ra số lượng page, / kích thước block sẽ ra số lượng block
-Kích thước page thì luôn tính theo 1 kiểu như v
-d) Ý nó là khi biểu diễn octal, 1 digit biểu diễn bằng 3 số. 
-Ở đây 1 block có 8 bytes tức cần 3 bit biểu diễn offset nhưng sang hệ octal thì chỉ cần 2 bits. 
-=> bỏ e trở xuống
+a) Dựa vào kích thước main mem, ta biết địa chỉ vật lý có bnh bit vì mỗi address trỏ đến 1 byte trong main mem mà. Địa chỉ vật lý có thể dùng nhiều bit vượt qua cache => nó luôn đủ chứ k thừa ra như ta nghĩ từ trước
+c) ********Break mind ngay câu c**********
+Phân biệt page size là đang nói cả page trong physical mem
+page table thì khác, k liên quan. Nhưng nếu đb nói tính size of page table thì phải tính số lượng PTE * kích thước 1 PTE
+Số lượng PTE ở đây ok là 2^10
+Kích thước 1 PTE thì nên nhớ 1 PTE có protection bit và data. Data của PTE chỉ là địa chỉ của 1 page trong physical mem mà thôi => nên nhớ kp là địa chỉ 1 byte mà là địa chỉ cả page. 
+Physical mem có 16KB mà 1 page có 64 byte nên số lượng physical page là 2^8 nên thực chất PTE lưu đúng 8 bit để biết page nào
+=> nhưng đơn vị nhỏ nhất là byte nên 8 + 4 = 12 làm tròn lên 2byte
+******lại hay nx quả làm tròn******
+d) càng ảo
+Cho ta hiểu được compulsory miss, capacity miss
+
+First level cache tách làm Icache và Dcach, chả hiểu tại sao
+
+Câu 5 trang 7 ý c lại hay:
+Nó nói rằng muốn tính lượng main còn lại gán cho system = max main mem - size of page tabl
+Ở đây page table kích thước lớn nên nó mới có ý nghĩa
+max size of main mem thực tế là: size 1 page * số lượng entry của main mem
+Số lượng entry của main mem của cả RAM thì phải là max lượng mà page table có thể trỏ tới => hiểu ngay vấn đề
 
 Cuối trang 13
 Bài 9 tr14 + Part C tr18

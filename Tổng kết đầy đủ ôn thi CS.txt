@@ -1,0 +1,231 @@
+Slide5:
+SRAM -> DRAM -> Magnetic disk
+=> Tận dụng locality => Lưu trên disk và copy từ disk vào smaller DRAM
+
+Copy từ lớn tới nhỏ: data -> block -> multiple words -> bytes -> bit
+
+Hit ratio = số lần hits / số lần accesses
+Miss ratio = 1 - hit ratio
+
+Làm sao để biết 1 data có trên cache hay không -> direct mapped cache
+
+Tag-index lưu trên cache tạo thành 1 block address
+Tag bit là lượng bit thừa, có thể nhiều số 0 ở cuối và = tổng lượng bit - số index bit
+
+Address subdivision vấn đề là nó chỉ trỏ tới 1 byte của block chứ k trỏ tới cả block hay 1 hàng trong cache
+Chia lấy dư và chia lấy nguyên để cắt bên trái và cắt bên phải
+=> Tính toán dựa trên address subdivision
+
+Block size lớn thì missrate có thể giảm nhưng miss penalty tăng nên k ổn
+
+WriteThrough: update cache sẽ update mem, phải chờ 
+WriteBack: update cache sẽ đánh block trong cache là dirty, khi block replace sẽ phải chờ thêm ghi vào mem 
+Khi 2 cái dùng thêm WriteBuffer, tức nó thêm tính năng bất đồng bộ. VD WriteThrough kp chờ update vào mem nx mà thực hiện bất đồng bộ việc đó. WriteBack kp chờ ghi vào mem nữa mà ghi vào buffer rồi làm bất đồng bộ việc ghi từ buffer vào mem
+WriteMiss: viết vào block mà block k có ở trong cache thì fetch về thôi
+
+SRAM được dùng làm cache, DRAM dùng làm main memory, 2 cái trao đổi thông qua bus. Cơ chế tương tự k xét giữa DRAM và magnetic disk -> tính toán
+
+Associative Cache: fully, n-way
+block address là phần address bỏ đi byte offset
+Replacement Policy LRU
+
+Multilevel cache:
+Level 2 vẫn là SRAM, DRAM sẽ là nói tới main memory. Chỉ là mở rộng hơn cho level1
+
+Effective CPI = Base CPI + missrate * miss penalty cycle => như CPI bth, chú ý là CPI thì tính 1 instruction
+
+
+Các dạng bài:
+Dùng DRAM làm main mem, tính bandwidth và miss penalty
+Tính toán liên quan đến address subdivision của DMC
+Tính toán về CPI, effective CPI, I cache và D cache, base CPI. Điều đb là load và store instruction là tỉ lệ số instruction thuộc về D-cache, actual CPI, AMAT => mở rộng tính với multilevel cache
+Tính toán memory stall cycle X program execution cycle => chú ý là khác với miss penalty, nhìn công thức slide
+Tính associative cache
+
+
+
+Slide 5 phần 2:
+
+-> Virtual mem:
+Mỗi program có physical address space rất lớn mà bộ nhớ RAM quá nhỏ để load cả ứng dụng, nên mỗi program sẽ có thêm 1 cái VAS ánh xạ vào PAS. Khi CPU chạy ở cấp độ thấp nhất, thứ nó có là VA của ứng dụng và search data tại VA đó.
+CPU có VA -> CPU translate VA thành PA bởi MMU có Address translation -> CPU search tiếp trong LV1 cache -> CPU search tiếp trong LV2 cache -> CPU search tiếp trong DRAM là main memory -> CPU search tiếp trong disk nếu k có
+=> Luồng đi cơ bản của data có thể khác với các bộ nhớ thiết kế khác
+
+Program dùng chung main mem (main mem chỉ chứa 1 phần của program, 1 phần trong disk), mỗi program có data và code và chung trong mainmem. 
+
+Thực tế, CPU query main mem để lấy page table và translate từ VA thành PA
+Flow kp là: 
+CPU -> LV1 -> LV2 -> Mainmem -> Disk
+Flow là:
+CPU -> LV1 -> LV2 -> Mainmem -> Disk
+\                         /
+ \__lấy page table trước_/
+=> Điều này làm nó luôn phải query trong main mem rất lâu => CPU có sẵn: Page table register trỏ vào page table trong main mem bằng physical address luôn. PT có trong main mem thì ok luôn(nhìn valid bit), k thì vào disk lấy ở làn đầu tiên => slide 58 nói về cái này rất xàm lol
+=> Dùng TLB tăng tốc k cần vào main mem thg xuyên nx
+
+Page offset trong PA cho biết lấy byte nào trong page table. VPN-PO -> PPN-PO => phần PO k đổi. Page offset thay cho byte offset trong physical address cache.
+Page table, page fault
+
+PT có nhiều PTE bên trong
+
+
+CPU -> TLB -> Page table register -> lấy pt trong mainmem, k có thì lấy trong disk
+    -> lấy pa từ va + pt -> có thể trỏ với disk or physical mem -> page fault (-> replacement policy)
+    -> Lv1 -> Lv2 -> Mainmem -> disk 
+
+
+Replacement policy:
+1 với cache: Dùng khi associative cache được sử dụng
+2 với main mem: sau khi có physical address của page rồi và cần lấy data từ main mem => sai -> lúc lấy Va đã page fault r
+
+Kỹ thuật này làm đổi cơ chế main memory. Ban đầu main mem lưu block of data. Thì ở kỹ thuật này, main mem lưu page of data, và kích thước các page này là fixed size
+Page fault là gì? 
+VA -> Page table -> mỗi PTE của nó đều refer tới 1 page data trong mainmem
+=> Tức PTE luôn đồng bộ với page đang có trong mainmem, nếu 1 data k có trong main mem thì nó k là PTE nào của page table và lúc đó mới gọi là page fault và update pagetable và update cả page data trong main mem lấy từ disk
+
+=> Tuy nhiên, nó vẫn possible for some PTEs trỏ tới data trên disk, VD các TH nó bị swap từ ngoài vào bằng ĐK nào đó. Miễn là page data thực k có trong main mem thì nó vẫn là page fault thôi. 
+
+-> Replacement policy: Dùng ref bit, định kỳ set là 0, mói dùng set là 1. Là 0 thì có thể replace ~ LRU
+Dùng WriteBack
+
+-> Dùng TLB nằm trong CPU luôn
+
+-> VA có Page number và Page offset, 1 số ít có tag bit nhưng thg là k có tag bit
+page number trỏ mẹ tới page cần lấy luôn trong page table chứ éo cần tag bit gì cả. page offset là để VA trỏ tới đúng 1 byte cụ thể nào trong page data vì bản chất 1 VA chỉ trỏ tới 1 byte duy nhất
+
+-> Phân biệt TLB miss và main mem miss(page fault):
+Page fault: nên nhớ do nó dùng write back nên phải check dirty bit, nếu là 1 thì write to disk first
+
+Tag bit của TLB so sánh trực tiếp với virtual page number luôn. TLB gọi là tag bit, page table thì ánh xạ như bth
+
+-> Các task khác nhau có thể dùng chung VAS nên cần bảo vệ, page table và các state chỉ access được ở kernel mode. 
+
+-> Compulsory miss, Capacity miss, Conflict miss
+
+
+Các dạng bài:
+Tính toán liên quan đến page table, virtual machine
+
+
+
+Slie 5 phần 3 (kqtr):
+
+-> Virtual machine hệ điều hành riêng
+Virtual machine monitor ánh xạ virtual resource sang physical resource, handle real I/O devices trên máy ảo.
+Máy ảo hỗ trợ cả user và system mode. 
+
+-> Cache control:
+Trạng thái của cache lưu trong register của CPU gắn với cache đó, mỗi khi hit hay miss hay writeback đều chuyển trạng thái cache
+
+-> Cache coherence:
+Mỗi CPU có cache riêng nhưng dùng chung mainmem -> Trong các operation dùng multi processor có thể xảy ra mất đồng bộ.
+C1: Snooping protocol monitor. Đơn giản khi đổi 1 biến thì là báo lên cả bus. Lệnh write chỉ kết thúc khi mọi CPU core đều bắt được rằng có sự thay đổi trên biến đó. 
+VD: CPU1 write X, then write Y, CPU2 see new Y, nó must also see new X before
+C2: Dùng global status chung
+
+-> Giảm miss penalty luôn có:
+Trả giá trị cần trước rồi các cái khác làm bất đồng bộ sau
+Hit sau miss thì thực hiện luôn
+Miss sau miss thì thực hiện fetch bất đồng bộ tất cả về chứ k chờ lần lượt
+
+
+
+Slide 6:
+-> Thiết bị IO
+reaction time: từ lúc user finish request đén khi system bắt đầu xử lý
+response time: từ lúc user finish request đến khi system gửi trả kết quả
+
+Dạng bài 1:
+-> MTBF = MTTF + MTTR
+Availability = MTTF / (MTTF + MTTR)
+
+Dạng bài 2:
+-> Disk: track, sector, cylinder
+Average read time = average seek time + rotational latency (1 nửa của rpm) + transfer time(tính từ transfer rate) + controler delay(overhead của controller)
+
+-> Flash Storage giữa DRAM và disk, giống DRAM
+
+-> Bus:
+Processor - DRAM bus: 
+IO bus: longer
+
+Data line truyền address và data. control line cho biết các action thực hiện là read hay write ở điểm đến
+
+-> Asynchronous, nhiều program dùng chung
+Máy phải có driver để điều khiển được IO device. Register là thứ khiến cho IO device thực hiện các hành động, các instruction tác động đến IO device phải access vào resgister và nó chỉ được thực hiện trong kernel mode
+
+Trong các hệ thống low performance, họ dùng polling để check liên tục status register xem IO device có ready hay không
+Device cũng có interrupt, priority càng cao thì interrupt có higher priority
+
+Direct memory access(DMA) là nói về IO controller chuyển data qua lại giữa IO device với main mem của máy tính mà k cần CPU can thiệp. VD ghi vào mainmem thì cache của CPU nếu có data của mainmem đó sẽ bị stale hoặc đọc data từ mainmem mà nó dùng WriteBack thì IO cũng lấy về stale nên luôn yêu cầu flush khi dùng DMA.
+DMA đọc ghi với main mem mà chơi virtual address sẽ cần controller làm thêm tính năng translation
+
+-> Measure CPU performance:
+Performance cân đối giữa response time và throughput(lượng tải).
+
+Dạng bài 3: dùng 2 công thức
+Amdahl law: Speedup = 1 / (S + (1-S)/N)
+Gustafson law: Speedup = N - S(N-1)
+
+-> RAID: Redundant Array of Inexpensive Disk
+là các giải pháp giúp cải thiện performance và tính availability
+RAID 0: Stripping là chia data thành nhiều disk
+RAID 1: Mirroring là replicate data trên thành nhiều bản physical disk. Có thể kết hợp strip trước r mirror => hỏng thì đọc từ mirror
+RAID 2: ECC chia data mức bit level giữa N disk => k thực tế
+RAID 3: Strip data vào N disk mức byte level kèm với parity code. Khi fail dựa vào parity code để xây lại missing data => ít dùng
+RAID 4: Tương tự nhưng chia data vào N disk mức block level => ít dùng
+RAID 5: Dùng thêm 1 disk nữa chuyên lưu parity của các disk khác => thg dùng
+RAID 6: Tương tự raid 5 nhưng dùng 2 parity code nên cần N + 2 disk
+=> Nch là nó cung giải pháp tăng high availability. Khi có lỗi là fix ngay
+
+-> Bỏ 6.11
+
+
+Slide 7:
+-> Parallelism:
+1 program run on multiprocessor. Trước ta có Cache Coherence và RAID sẵn rồi
+
+Dạng bài 1:
+-> Amdahl's law
+Bài toán về tính tổng 10 số liên tục và tổng mọi số trong ma trận 10x10
+
+Load càng lớn, tốc độ dù lâu hơn nhưng speedup lợi hơn so với dùng ít processors
+
+Strong scaling là khi vấn đề fixed size, weak là khi số lượng prossesor khác nhau thì k dem lại lợi ích gì vì size problem buộc phải tăng lên
+
+-> Multiprocessor có 2 kiểu: 1 là UMA thì processor thực hiện request vào main mem thì k phụ thuộc vào cái nào đang make request, tốc độ là như nhau, dùng lock; NUMA thì phụ thuộc vì mỗi processor gắn với 1 phần mem riêng: processor - cache - mem - bus chung => phổ biến
+
+-> Cluster k nói về 1 máy nhiều processor nữa mà chia nhiều máy độc lập connect bằng IO system. VD DB, server, client mỗi cái chạy trên thiết bị riêng
+Message Passing System là hệ thống khi mỗi phần tử là 1 black box và k chia sẻ gì cả, chỉ truyền message mà thôi
+
+-> 3 cách implement multithread trong kiến trúc máy tính
+Coarse grain: Chọn được 1 thread A rảnh, nhảy từ B sang A nếu L2 của B miss, L2 của B hết miss thì quay chuyển lại A sang B
+Fine grain: dùng round robin xoay vòng để xử lý lần lượt thread sau 1 ktg bất kể miss hay hit L2
+Simultaneous: 1 core có nhiều tập hợp kiến trúc có thể exec 1 nhiều thread khác nhau, tức nhiều thread chạy trên cùng 1 core.
+=> Nên có nhiều giải pháp xử lý async. VD trong JS dùng event loop, dùng nhiều thread, dùng nhiều core, lập trình bất đồng bộ.
+
+-> 1 cách phân loại processor khác:
+Single instruction, single data: đời cũ máy xử lý 1 luồng instruction với 1 luồng data với từng chương trình
+Multi instruction, multi data: mỗi processor xử lý các luồng instruction khác nhau, và luồng data khác nhau
+Single instruciton, multi data: mỗi processor xử lý cùng 1 luồng instruction nhưng với các tập data address khác nhau 
+
+Vector processor là 1 loại processor được design để thực hiện các phép toán học trên mảng or vector of data thay vì xử lý từng phần data riêng lẻ. Nó được thiết kế đb giúp thực hiện các phép đó trên 1 tập data lớn nhưng chỉ tốn 1 instruction cycle. Nhanh hơn kiểu truyền thống là scalar processor. 
+
+-> GPU: là highly multithread, memory và băng thông rất rộng. Vi xử lý chuyên dùng cho đồ họa
+
+-> Bỏ qua 7.10 và 7.11, 7.12, 7.13
+
+
+
+Tổng kết công thức:
+Memory stall cycle = instruction / program * miss rate * miss penalty
+AMAT = hit time + instruction / program * miss rate * miss penalty time
+(Effective) CPI = base CPI + miss rate * miss penalty * tỉ lệ
+Total CPI = base CPI + tỉ lệ * miss rate * miss penalty (Dcache) + tỉ lệ * miss rate * miss penalty (Icache)
+Miss penalty = tg truyền địa chỉ + tg lấy data trong main mem + tg truyền data về
+Bandwidth = có thể là byte/sec hoặc byte/cycle
+Direct access time = average seek time + rotational delay (1 nửa của rpm) + transfer time(tính từ transfer rate) + controller overhead (có thể tính theo cycle time nếu cho)
+Speedup1 = 1 / (S + (1-S)/N)
+Speedup2 = N - S(N - 1)
+Availability = MTTF / (MTTF + MTTR)
+MTBF = MTTF + MTTR
