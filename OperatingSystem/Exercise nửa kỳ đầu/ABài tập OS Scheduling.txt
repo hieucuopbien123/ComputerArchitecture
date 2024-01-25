@@ -1,0 +1,61 @@
+Ta hiểu nhầm về maximize CPU utilization: cái này kp là thực hiện nhiều hành động k ngưng nghỉ là CPU càng bận đâu. Cái context switch gây ra 1 khoảng idle mỗi khi save và load data của thread mới. Khoảng idle này là ktg vô dụng gọi là overhead. Sẽ tệ hơn nữa nếu thời gian overhead còn lớn hơn thời gian nó exec 1 thread. Do đó cần hạn chế điều này nhất. Do đó maximize CPU utilization đối nghịch với minimize response time vì nếu context switch thực hiện càng ít thì response time càng lâu do 1 thread quan trọng cần thực hiện để show ra response thì cần context switch ngay thì nghịch với CPU utilization.
+Tương tự thì I/O device utilization và CPU utilization cũng đối nghịch nhau.
+
+Các process send trong ready queue đều là đang chuẩn bị được đưa vào CPU bất cứ lúc nào đến lượt scheduler lấy nó ra nhét vào CPU.
+
+Minimize average turnaround time đối nghịch với minimize waiting time:
+Cái này thực tế là k đối nghịch vì turn around time giảm thì waiting time cũng giảm vì 1 cái là thời gian chờ, 1 cái là thời gian thực hiện xong. Nếu thực hiện xong sớm hơn thì hiển nhiên các thread cũng có thời gian chờ nhỏ hơn.
+Nhưng điều này k đúng trong TH hệ thống starvation. Hiện tương starve long-running task là khi các task lớn kbh được thực hiện. Thuật toán duy nhất giảm turn around time là SJF nhưng thuật toán này có nhược điểm là cứ shorter task thì thực hiện thế nếu shorter task vào liên tục mãi mãi thì long task có thể kbh được thực hiện. Turnaround time average giảm khi thực hiện các shortest task trước trong khi điều này gây starve cho long-run time làm waiting time của long task kéo ra rất dài nên tăng waiting time chứ kp giảm nên đối nghịch.
+
+thuật toán lottery scheduling gán random thread nhận được 1 phần CPU time để chạy CPU burst của nó
+
+Thuật toán regressive round-robin là gán cho 1 time quantum fix 50ms. Nếu dùng hết thì tăng time quantum cho thread lên 10ms, max là 100ms, priority cũng boost lên. Nếu process bị I/O block trước khi sử dụng hết entire time quantum thì time quantum giảm 5ms nhưng priority k giảm => thuật toán này favor CPU-bound thread.
+Với I/O bound process thì nó k penalize vì giảm 5ms và k đổi priority. Vc giảm 5ms khiến nó thực hiện ngắn hơn nhưng k có nghĩa là penalize đâu vì trong solaris thậm chí các I/O bound cho time slice ngắn hơn CPU bound để nó có response nhanh
+
+Bài 4:
+a) FCFS: 0 P1 2 P2 3 P3 11 P4 15 P5 20
+SJF: 0 P2 1 P1 3 P4 7 P5 12 P3 20
+Nonpreemptive priority: 0 P2 1 P1 3 P4 7 P5 12 P3 20
+RR: P1 P2 P3 P4 P5 P1 P3 P4 P5 P3 P4 P5 P3 P4 P5 P3 P5 P3 P3 P3
+b, c, d ez
+
+Thuật toán có thể gây starvation là SJF và priority-based scheduling
+FCFS và RR chắc chắn k gây starvation. Cái priority-based có pp aging giải quyết.
+
+Xét FCFS thì có thể coi nó kiểu: càng thực hiện thì priority càng tăng nhanh, càng chờ thì priority càng tăng nhưng k nhanh bằng.
+Thuật toán nào càng thực hiện thì priority càng giảm, càng chờ thì priority càng giảm mạnh hơn -> nghe vô lý vãi chưởng. Càng thực hiện priority càng giảm làm ta liên tưởng tới 1 cái queue, khi mà thực hiện xong thì priority của nó giảm thành thấp nhất và nhét ở đít queue và thực hiện sau cùng. Nhưng nếu là queue thì càng chờ priority phải tăng. Thuật toán khả thi thứ 2 chắc là CFS. Khi dùng RBT thì càng thực hiện thì priority càng giảm về bên phải tree, càng chờ thì priority đúng là tăng nhưng nếu càng nhiều task mới vào thì priority giảm vì sẽ thực hiện lâu hơn. Nhưng chờ thì priority k giảm mạnh hơn làm được. 
+Đáp án lại là LIFO kiểu stack. Càng thực hiện thì priority càng giảm vì hết slice time thì nó push lại vào stack và 1 cái mới vào thì thực hiện cái mới. Nhưng càng chờ thì priority càng giảm mạnh hơn.
+
+FCFS: favor long job hơn short job(sum of CPU and I/O burst is short) là vì nếu shortjob vào sẽ phải chờ lâu hơn nếu trước đó là long job. Long job vào sẽ chờ ngắn hơn r được thực hiện 1 phát hết luôn. Nch là shortjob có waiting time lâu hơn longjob
+RR: treat all job như nhau vì mỗi cái chiếm 1 phần CPU burst, long hay short cũng phải chờ tương đương tùy vào số lượng job hiện có. short job ra sơm hơn vì time nó ngắn hơn thôi
+MFQ: nhiều queue liên tiếp nhau, mỗi queue là 1 round robin nhưng k quay lại mà nhảy sang queue sau sau mỗi lần -> nó cũng treat long và short job tương tự nhau.
+
+Đù má, nếu nói 1 thuật toán priority based with RR tức là đang nói nếu cùng priority thì cái queue của priority đó sẽ dùng RR, còn bth là nó theo priority r. Còn nếu thực hiện priority vói time slice thì lại thành MFQ r.
+
+Bài 9
+Công thức: 
+Turnaround time of a proccess = finishing time - arrival time
+Waiting time = finishing time - arrival time - running time
+
+Possible next state for a process in running state là: Ready, Blocked, Terminated
+Possible next state for a process in ready state chỉ có running. K thể terminate vì terminate cũng là 1 thread cần phải running để terminated
+
+Câu 11 cứ vẽ trục thời gian độc lập với cái trục trên hình ra mà làm là ok. Xong thích mốc nào lấy mốc đấy. Nên nhớ nó chỉ chạy 1 thread 1 lần ở queue có priority cao hơn chứ kp chạy đồng thời
+
+Bổ sung:
+priority scheduling đúng bản chất thì nó là preemptive vì nếu có 1 process có priority cao hơn đến vào lúc sau thì nó sẽ dừng thread hiện tại để chạy cái có priority cao hơn. 
+
+4 process sharing CPU với RR. Tìm q để đảm bảo each process get the turn at the CPU at every 10s, biết context switch là 1s, cố gắng để số lượng context switch là min.
+-> Theo thứ tự chạy thì kc giữa 2 lần 1 process được chạy phải là 10s là max hay:
+Q1 | CS | Q2 | CS | Q3 | CS | Q4 | CS | Q1...
+-> giữa 2 lần Q1 có (4 + 3q) giây là max là 10 tức q <= 2 
+-> q = 2 là max q có thể đảm bảo > 1s của context switch và thỏa mãn đk với số lượng CS là min
+
+Để minimize CS thread người ta dùng multithread sao cho thread share computation trong 1 process hơn là mỗi process 1 thread và gọi nhiều process => NN là CS của thread rẻ hơn, ít overhead hơn CS của process.
+
+Trong multitask RS, process CS sẽ xảy ra khi process terminate, quantum time elapse, process tự ngưng hay preempted, process thực hiện I/O, khi 1 interrupt xảy ra từ outside như ctrl+c hay Kill() command.
+Khi nói dùng 3 hđh cx có nghĩa các process chạy bên trong đều preempted.
+
+Bài tập về multilevel feedback queue rất láo. Chỉ có 1 hàng đợi dược thực hiện tại 1 mốc thời gian. Hàng đợi trên có priority cao hơn hàng đợi sau nên nó phải trống thì hàng đợi sau mói được thực hiện nên phải tính toán khác. Cứ cho các process vào hết hàng đợi 1 thực hiện theo thứ tự. Hết time thì tất cả lại sang hàng đợi tiếp theo thực hiện vẫn theo thứ tự và cứ thế cho đến khi hết. Hàng đợi thứ 2 chỉ thực hiện khi thứ nhất trống. 
+
+

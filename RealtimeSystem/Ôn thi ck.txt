@@ -1,0 +1,182 @@
+Chapter 7: Fixed Priority Servers
+
+Background scheduling: 
+Khi có sự kết hợp của task tuần hoàn và task k tuần hoàn. Tuần hoàn thì như RM, không tuần hoàn thì k rõ thời gian arrive.
+Cơ chế là task tuần hoàn thực hiện trước theo priority, thực hiện task k tuần hoàn khi có tg rảnh.
+
+Response time của aperiodic task thấp nếu high periodic load
+
+Polling server xử lý
+
+Công thức schedulability của polling server: Up và Us
+
+Ts = T1 tức là chu kỳ bằng chu kỳ của task có độ ưu tiên cao nhất
+
+Maximum utilization of polling server
+
+Trong ví dụ thì T1 ưu tiên hơn aperiodic ưu tiên hơn T2. 
+
+-> Task vào đúng lúc server suspend => DS
+Tương tự nhưng lưu state 
+
+Schedulability công thức slide
+
+Maximum utilization and highest priority
+
+-> Priority Exchange:
+Nó lấy priority của task periodic để thực hiện cho periodic
+
+Công thức slide
+
+-> Sporadic Server
+Quả replenish được giải thích rõ trong slide r. Khi nào cộng, cộng lên bao nhiêu, khi nào là active time
+
+Bảng ss
+
+
+
+Chapter 9: Resource Access Protocol
+Resource constraint k cho phép đồng thời
+
+The priority inversion phenomenon. Task cao hơn vẫn phải chờ task thấp hơn hoàn thành critical section. Giả sử task thấp hơn đó đang thực hiện critical section dở thì lại phải preempt 1 task khác nhỏ hơn, thành ra task cao kia đang phải chờ task nhỏ hơn hoàn thành, và phải chờ critical section của task con hoàn thành nx
+
+Có nh pp giải quyết
+Terminology & assumptions(1)
+
+
+Non-preemptive Protocol:
+Cơ chế slide
+Công thức:
+Cho 1 task Ti, critical section mà block được Ti là Yi là mọi critical section thứ k của task j sao cho độ ưu tiên của j thấp hơn i
+Công thức maximum blocking time chuẩn r
+
+Highest Locker Priority Protocol (HLP)
+Định nghĩa mới là priority ceiling của 1 resource là maximum priority của các task dùng resource đó, thay vì để lên priority cao nhất như bth
+Công thức blocking time tương tự
+
+Priority Inheritance Protocol
+Nó giải quyết vấn đề khi có nhiều loại Resource khác nhau, mỗi loại có 1 biến semaphore riêng
+Cơ chế:
+Nhìn biểu đồ của PIP với biểu đò của HLP là hiểu vấn đề, HLP set priority change ngay từ lúc đầu tiên thực hiện. 
+2 dạng là: 
+Phân biệt direct blocking (Đang dở thì ngắt) và push-through blocking (chưa kịp làm tiếp thì ngắt - điều kiện trong slide)
+Transitive priority inheritance
+
+Most block time:
+❑ If there are n lower-priority jobs that can block a job Ji, then Ji can be blocked at most the duration of n critical sections.
+❑ If there are m distinct semaphores that can block a job Ji, then Ji can be blocked for at most the duration of m critical sections.
+❑ Under the priority inheritance protocol, a job J can be blocked for at most the duration of min(n,m) critical sections.
+n is the number of lower-priority jobs that could block J
+m is the number of distinct semaphores that can be used to block J
+
+
+Priority Ceiling Protocol
+Phân biệt 3 pp cuối:
+HLP: Ngay khi 1 task enter critical section, nó tìm xem task nào khác có priority cao nhất mà cũng dùng critical section đó thì gán cho priority đó luôn
+PIP: Khi 1 task block 1 task khác có priority cao hơn, phần critical section đang chạy đó sẽ mang priority của task cao nhất mà nó từng block. Quá trình block bởi critical section phải xảy ra thì mới có sự thay đổi về priority. 
+Khi kết thúc critical section, mọi thứ sẽ tiếp tục như bth. Task cao nhất priority sẽ thực hiện
+Khi kết thúc critical section X mà critical section Y chưa kết thúc, trong khi Y cao hơn X thì task đó vẫn tiếp tục thực hiện Y và mang priority của task bị block bởi resource Y
+
+PCP: Giống PIP nhưng có vài điểm khác biệt
+Mỗi semaphore sẽ gán 1 ceiling priority là priority của highest priority task có thể lock semaphore đó 
+Khi 1 critical section có nhiều semaphore, job J có thể thực hiện critical section của nó nếu priority của nó lớn hơn (kp >=) mọi ceiling priority của mọi semaphore đnag bị lock
+
+Cụ thể, PIP thì 1 task được chạy critical section nếu k có task nào khác block critical section đó như bth. Còn PCP thì 1 task chỉ chạy được critical section, nếu critical section resource đó có priority cao hơn tất cả các critical section khác mà đang block bởi các task khác. 
+Nhìn vd slide ceiling block là hiểu
+
+Ta đang hiểu sai ở chỗ ceiling Priority của mỗi task được tính từ trước khi thực hiện mọi thứ. Nó khác với cái chart là active priority chứ chứ kp ceiling priority => End chỗ này là dược
+Tức là ta ss với ceiling priority và cái priority này có từ trước khi thực hiện mọi thứ. Các task đều biết thông tin ngay từ đầu
+
+Block at most 1 critical section: slide
+
+
+
+PE giải thích:
+Đầu tiên server chạy và các task periodic chạy như bth. Họ kẻ ra 2 đường cho 2 task periodic (giả sử có 2). Đường kẻ ở 1 task sẽ tăng nếu server đang active và task hiện tại đang được thực hiện. Đường kẻ đi ngang khi server không active và task đó đang thực hiện, hoặc khi server active nhưng task cao hơn nó đang thực hiện. Đường kẻ sẽ giảm chỉ khi k có task nào >= nó thực hiện    => đó là khi chưa có task aperiodic
+Vì server chỉ accumulate được 1 task
+Khi có task periodic, server sẽ thực hiện task này nếu server đang active. Nếu server k đang active, nó sẽ check 2 đường kẻ kia, đường kẻ của task priority cao hơn nếu còn capacitiy sẽ giảm đi cho task kia thực hiện. Priority của aperiodic lúc này chính là prioirty của task mà ta đã lấy đường kẻ
+Nếu vừa có đường kẻ của 1 task thấp, 1 task cao khác đang chạy, vừa có active server, vừa có task thực hiện, nó sẽ lấy theo priority của RM. VD nếu server có priority cao hơn, nó sẽ lấy của server và đường kẻ giữ nguyên và thực hiện task aperiodic. Nếu server có priority thấp hơn, nó phải thực hiện task periodic cao hơn là hiển nhiên, Vì khi đó chia theo priority nên cứ làm tiếp như bth
+Nếu vừa có đường kẻ task cao, vừa có aperiodic request, nó dừng task cao để thực hiện aperiodic request. Nên nhớ đường kẻ ưu tiên giảm về 0 r mới thực hiện periodic request;
+=> sai
+
+
+
+
+Tổng kết: 
+
+Fixed Priority Servers:
+Mọi periodict task bắt đầu từ t=0, D = T, arrival time của aperiodic unknown, preemptive
+
+1) Background scheduling
+Dùng RM, ưu tiên chu kỳ nhỏ nhất
+Cơ chế: Chạy periodic task trước, hết task thì chạy aperiodic task
+Đặc điểm: response time của aperiodict task kém khi periodic task nhiều
+
+2) Polling Server
+Dùng RM, ưu tiên chu kỳ nhỏ nhất
+Cơ chế: Ưu tiên chu kỳ nhỏ nhất, tính cả server và periodic task. Server thực hiện aperiodic task, refill capacity ở đầu mỗi chu kỳ, k có task sẽ giảm về 0
+Đặc điểm: response time của aperiodic task tốt
+Check schedulability: Up <= n[(2/(Us + 1))^(1/n) - 1]  Or  P = PI(i=1->n)(Ui + 1) <= 2/(Us + 1)
+Để feasible thì Us <= (2-P)/P , max server utilization khi Usmax = (2-P)/P  tức Ts = T nhỏ nhất có thể với Us = Cs / Ts
+
+3) Deferable server
+Dùng RM, ưu tiên chu kỳ nhỏ nhất, đánh giá priority dựa vào chu kỳ nhỏ hơn
+Cơ chế: Ưu tiên chu kỳ nhỏ nhất, tính cả server và periodic task. Server thực hiện aperiodic task, refill capacity ở đầu mỗi chu kỳ, k có task sẽ giữ nguyên capac
+Đặc điểm: Average response time cho aperiodic task tốt hơn vì server k bị suspend
+Check Schedulability: Up <= n[((Us + 2)/(2Us + 1))^(1/n) - 1]  Or  PI(i=1->n)(Ui + 1) <= (Us + 2)/(2Us + 1) , tức system bound là Ulb = Us + n[((Us + 2)/(2Us + 1))^(1/n) - 1]
+Dimensioning: Us <= (2-P)/(2P-1) nên max utilization là Usmax = (2-P)/(2P-1) khi Ts = T nhỏ nhất có thể và Cs = Us*Ts
+
+3) Priority Exchange
+Dùng RM, ưu tiên chu kỳ nhỏ nhất, đánh giá priority dựa vào chu kỳ nhỏ hơn
+Cơ chế: Vẽ periodic như bth. Khi có server active và có aperiodic thì thực hiện aperiodic, đó là khi server có priority cao nhất, nếu không vẫn phải tuân theo priority. Nếu k có aperiodic, server sẽ accumulate task periodic có highest priority mà thấp hơn, phần accumulate đó vẽ thành đường, nếu task aperiodic xuất hiện sẽ thực hiện theo priority cao nhất mà đang có accumulate. Khi task cao hơn có accumulate đang thực hiện mà kết thúc, task thấp hơn thực hiện thì sẽ truyền accumulate đó cho task thấp hơn và cứ thế => Tức là nếu task aperidic vào đúng lúc server active thì sẽ thực hiện đúng như priority như bth, nhưng nếu server active chán chê rồi mà aperiodic k vào để tiêu thụ, nó sẽ thực hiện task thấp hơn để tích lũy, nếu sau này aperiodic task vào thì lấy phần tích lũy đó ra xử lý thôi
+Giảm theo kiểu mỗi cục trừ 1 đi trên đường
+Check schedulability: Up <= n[(2/(Us + 1))^(1/n) - 1]
+Utilization: Upmax = (2-P)/P với P = PI(i=1->n)(Ui + 1)
+
+4) Sporadic server
+Dùng RM, ưu tiên task có chu kỳ nhỏ hơn
+Cơ chế: Thực hiện aperiodic và periodic theo priority như bth. Server preserve capacity và k tự theo chu kỳ như bth. Server active khi task có priority >= priority của server đang thực hiện, và ngược lại là idle. Server refill sau "Ts + start of active", lượng refill chính là lượng tiêu thụ bởi aperiodic task.
+Check Schedulability: Up <= n[(2/(Us + 1))^(1/n) - 1]
+Utilization: Usmax = (2-P)/P
+
+Chỉ tiêu thụ mới giảm từ từ, còn lại toàn 1 cục lên xuống luôn
+
+
+
+Resource Access Protocol
+
+1) Non-preemptive Protocol
+Có resource, task priority
+Cơ chế: Thực hiện bth theo priority với preemptive, nhưng khi 1 task đang thực hiện critical section thì k task nào nhảy vào được cho đến khi xong
+Đặc điểm: unnessary blocking
+Max blocking time của task Ti là Bi = max(duration của critical section mà có thể block Ti - 1) => chỉ tính critical section của task priority < Ti, lấy ra 1 cái lớn nhất là max blocking time
+
+2) Highest locker priority
+Có resource, task priority
+Cơ chế: Thực hiện task bth theo priority, nhưng khi 1 task enter critical section, priority của task đó trở thành max priority của mọi task mà có thể dùng resource đó. 
+Max blocking time của task Ti là Bi = max(duration của mọi critical section mà có thể block Ti - 1) -> chỉ tính các task có priority nhỏ hơn task i
+Priority ceiling của resource Rk là C(Rk) = max(priority của mọi task mà dùng Rk)
+
+3) Priority inheritance protocol (PIP)
+Có task, nhiều critical section khác nhau, priority
+Cơ chế: Thực hiện các task theo độ ưu tiên của chúng. Khi 1 task cần dùng critical section đang dùng bởi task khác sẽ bị block, chỉ khi block xảy ra, thì task đang block sẽ mang max(priority của các task đang bị block)
+1 job bị block lâu nhất là min(n,m) critical section với n là số lower priority job và m là số distinct semaphore mà có thể block task J
+
+Cách chọn critical section block được task J: Mỗi task có priority nhỏ hơn task J đều có 1 critical section có thể block task J, nhưng critical section đó phải được dùng ở cả task đó và task J. Hoặc critical section đó được dùng ở task đó và 1 task cao hơn task J(push through blocking). Khi chọn 2 critical section có thể block task J, 2 critical section đó phải không thuộc cùng 1 task vì hiển nhiên 1 task k thể block 1 task khác bằng 2 critical section. Chọn critical section bằng phần resource của task nào.
+=> Chỉ được lấy các critical section của task lower priority, vì task priority lớn hơn k gọi là block mà gọi là preempt bth k tính. Đó là lý do push through blocking chọn như v. Task nhỏ hơn mà trùng resource thì các phần đó direct blocking, task nhỏ hơn mà có resource trùng với task cao hơn nó thì phần resource của cái nhỏ hơn đó là push through blocking => VD trong sách
+Tuân thủ số lượng trong công thức min(n,m) nx là được
+K được lấy 2 critical section ở 2 task cùng 1 loại resource luôn
+
+4) Priority ceiling protocol
+Có task, nhiều critical section khác nhau, priority
+Cơ chế: Thực hiện các task theo độ ưu tiên của chúng. Mỗi critical section sẽ được gán 1 ceiling priority là max(priority của các task có thẻ lock critical section đó). Khi block xảy ra thì task đang block (sẽ đang thực hiện critical section) sẽ mang max(priority của task đang bị block) y hệt PIP, nhưng task chỉ execute critical section nếu priority của nó > mọi ceiling priority của mọi semaphore đang bị lock, phải là cao hơn chứ k được bằng). Khi task exit critical section sẽ tiếp tục mang max(priority của task đang bị nó lock). Điều này k có gì bất ngờ vì 1 task có thể có nhiều critical section block nhiều task khác nhau, nếu k block task nào, nó mang priority bth của chính nó.
+1 job có thể bị block lâu nhất là thời gian của 1 critical section.
+
+Chọn 1 tập hợp critical section thì giống PIP nhưng chỉ lấy ra 1 trong số đó
+
+
+
+Maximum blocking time là thời gian bị block max bởi nguyên nhân do critical section của task lower priority thực hiện, kp do preempt. Tức nó k tự thể nào vượt quá critical section time được
+
+
+

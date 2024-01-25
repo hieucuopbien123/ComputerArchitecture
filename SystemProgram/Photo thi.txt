@@ -1,0 +1,154 @@
+TK KT:
+Chapter1:
+Các loại thanh ghi 32 bit eax ebx ecx edx ebp esp
+Các ký hiệu thanh ghi 16 và 8 bit
+Các lệnh assembly của i32a mov add sub div mul idiv imul and or not neg cmp jmp JE JL JG JNE JGE JLE LOOP PUSH POP CALL RET LEAVE ENTER
+Cách ký hiệu kích thước và size biến, phạm vi biến, truy cập mảng, memory segmentation, memory alignment
+Cơ chế call và dùng stack. Mô tả trạng thái stack trong đoạn code assembly
+Các cờ flags trong EFLAGS
+4 kiểu function calling cdecl pascal stdcall fastcall. Viết assembly code dùng từng kiểu
+
+Bản chất các mode memory management: 
+Real address mode dùng segment register, mỗi segment 64KB nên có 4 bit offset thành 1MB. Convert virtual sang physical
+Flat memory mode dùng 32 bit address luôn, k dùng segmented memory
+
+Convert từ assembly sang code C++
+Convert từ code C++ sang code assembly i32a
+Tìm output của đoạn code assembly và C++
+
+Chapter 2:
+Quản lý bộ nhớ trong 8086 processor dùng segment register và offset register. Cách convert virtual sang physical ở 8086 processor
+Cơ chế object file trong MS-DOS EXE header
+
+Chapter 3:
+Segment alignment các module rời rạc thành 1
+Plan memory khi linking multiple segment object file. Tìm base address cho từng segment
+Tính toán địa chỉ sau khi relocation
+
+Photo:
+Cheetsheet i32a
+txt này
+
+
+
+Chapter 1:
+eax ebx ecx edx => 32 bit
+AX BX CX DX => 16 bit low
+AH AL => 8bit high và 8bit low của AX, tương tự BX CX DX 
+BP SP là 16 bit low của EBP và ESP
+(Ignore) ESI EDI
+
+Truy cập vào mảng 
+movl $1,%eax => lưu 1 vào thanh ghi eax 32bits
+movb $1, 0x80800000 => lưu 1 vào memory tại địa chỉ 0x80800000 8bit
+addl subl idivl imull andl orl 
+addl $1,%eax => %eax += 1 
+cmp %ebx,$1 => param1 trừ param2, zero flag được set nếu = 0, signflag được set nếu < 0
+JMP JE JL JG JNE JGE JLE tương tự là check zeroflag và signflag
+PUSH và POP đều tự đổi thanh ghi esp như ý
+CALL <label> sẽ PUSH vào câu lệnh sau vào stack và chuyển EIP đến label
+RET $8 => sẽ pop return address khỏi stack và đổi EIP thành return address đó. Optional params để giải phóng 8 bytes trên stack tương ứng 2 tham số truyền vào hàm sau khi thực hiện xong
+LEAVE => đặt giá trị của %ebp vào %esp và pop giá trị từ ngăn xếp vào %ebp
+ENTER $12, 0 => tham số 1 là kích thước stack frame cho hàm này là 12, 0 là số lần hàm này gọi lồng hàm khác (k tính đệ quy) là 0. Sẽ lưu ebp vào stack, gán esp cho ebp và trừ esp xuống $16
+(Ignore) Instructions DIV MUL NOT NEG TEST LOOP LEA PUSHAD POPAD; Overflow Flag OF và Carry Flag CF;  
+
+Suffix: b byte 1 byte, w word 2 bytes, l long 4 bytes
+
+1) Dùng .text báo hiệu bắt đầu phần code.
+VD1:
+.text
+main: ...<nội dung hàm main>
+f: ...<nội dung hàm f>
+VD2:
+.text
+.globl main 
+  .type main,@function
+main: ...<nội dung hàm main>
+=> Khai báo chi tiết hơn hàm main là 1 function global
+
+2) Dùng .data báo hiệu bắt đầu khai báo biến
+VD:
+.data
+  .type a,@object
+  .size a,12
+a: 
+  .long 1
+  .long 2
+  .long 3
+=> Khai báo biến a có kiểu là @object(tức là mảng) với kích thước 3 phần tử, mỗi phần tử 4 bytes là 32 bit kiểu long
+
+3) Dùng .section .rodata báo hiệu khai báo các biến readonly
+VD: 
+.section .rodata
+.LCO:
+  .string "%d\n"
+=> Biến này tên là .LCO
+
+Ngoài ra còn có:
+.file "program.c" => gắn debug info trong file. Nó cùng cấp bậc với .text và .data
+x: .long 12 => 1 số nguyên 4 bytes có giá trị là 12
+x: .word 34 => 1 số nguyên 2 bytes có giá trị là 34
+x: .byte 'A' => 1 số nguyên 1 byte có giá trị là 'A' = 65
+a: .space 20 => 1 mảng có 20 phần tử chưa gán giá trị
+m1: .ascii "Hello World!\0" => string có \0 ở cuối
+m2: .asciiz "Hello World!" => string k có \0 ở cuối
+.p2align 2,3 => dùng ngay sau .text và .data trước khi khai báo bất cứ 1 cái gì. Sẽ set address chia hết cho 2^2, dịch max là 3 bytes
+=> Thường dùng mỗi số, mảng, string, .text và .data thôi, k cần quan tâm mấy cái khác
+
+Dùng stack:
+Gọi hàm -> gán ebp -> gán esp vào ebp -> khởi tạo sub esp đi -> ... -> leave -> ret
+Địa chỉ mở rộng dần từ cao xuống thấp, cao bên trên, thấp ở dưới. 
+
+- cdecl:
+right to left, caller pass và release params trên stack, số lượng params k fix cứng. VD:
+push c
+push b
+push a
+call func
+add $12,%esp
+Dùng %eax
+- pascal:
+left to right, callee release stack chứa params, số lượng params fix cứng. VD
+push a
+push b
+push c
+call func
+Dùng %eax
+- stdcall:
+right to left, callee release stack chứa params, số lượng params fix cứng. VD:
+push c
+push b
+push a
+call func
+Dùng %eax
+- fastcall:
+Thường là từ phải qua, pass 1 phần register 1 phần stack. Callee release nếu có dùng stack truyền params vào. VD:
+mov c, %eax
+mov b, %edx
+mov a, %ecx
+call func
+
+Real address mode:
+Physical address = segment << 4 + offset (công thức hệ 2)
+Mỗi segment dùng 64KB memory vì biểu diễn địa chỉ bằng 16 bits, thêm thanh ghi offset 4 bit thành 1MB dùng 20 bits
+
+Chapter 2:
+8086 processor sử dụng 16 bit register với IP và SP dùng max 64KB. Để dùng 1MB, nó hêm segment register đăng trước. CS cho code, SS cho stack, DS và ES cho data. Đi thành cặp Segment / Offset là CS /IP hoặc SS / SP
+Physical address = segment << 4 + offset (công thức hệ 2)
+Để làm trên hệ 16: 
+CS=0x1234, IP=0x2140
+Absolute address: 0x12340 + 0x2140 = 0x14480 => tức CS thêm 0 + IP, nếu k bị dư sẽ tính ra nhanh
+
+Chapter 3:
+Cơ bản ghép các module lại thành 1, mỗi segment có 1 base address mới nối tiếp nhau nhưng được align chia hết cho 8(PowerPC) hoặc 4(Intel32) (đề bài sẽ nói)
+
+Link multiple segment object file: cùng segment thì dùng word aligment 4 bytes, khác segment thì dùng page alignment đề bài sẽ nói điểm bắt đầu và kích thước (thg là 4KB = 4096B = 1000h). Phần data và BBS dùng word alignemnt vì có same feature. Nó gom phần text của các module lại thành 1 segment, phần data và BBS của các module lại thành 1 segment.
+VD: text hàm main 1000-2016 => tức size của hàm main là 1017 tính cả bytes bắt đầu và bytes kết thúc.
+Cách tính nhanh: Để biết 1 số hexa lớn hơn 1 số hexa khác mà chia hết cho 4, ta tăng số cuối cùng của hexa lên cho đến khi nó chia hết cho 4. Nếu nó là CDEF, thì số cuối phải thành 0 và số trước đó sẽ +1, nếu số trước đó là f thì lại thành 0 và +1 số trước đó nữa, nếu tất cả là f thì tất cả thành 0 hết và thêm 1 vào đầu.
+Cách tính nhanh chia hết cho 4096 = 1000 hexa => cho 3 số cuối thành 0 và tăng số trước đó lên 1 tương tự lùi dần nếu là f
+
+1 địa chỉ X trỏ đến 1 địa chỉ Y tuyệt đối. Địa chỉ của X mặc định sẽ relocation thành địa chỉ của Y + base address của segment mà Y thuộc về
+Reference tương đối thì cũng chỉ là: address mốc tương đối + giá trị reference. VD: E + 0x11 vì tham chiếu tương đối k phụ thuộc vào absolute address của segment
+
+
+

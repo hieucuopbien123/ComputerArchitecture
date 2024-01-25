@@ -1,0 +1,568 @@
+Operating System:
+figma: https://www.figma.com/file/vssrVFBS6FqWn8LupSqYO6/Untitled
+slide, txt
+
+
+# Chapter 1:
+Computer có 3 thành phần. Phần OS có nhiệm vụ control the use of hardware
+Trong hardware của máy:
+- Muốn lấy data từ memory buộc phải qua system bus
+- CPU có thể có 1 or nhiều trong kiến trúc
+- I/O device có 3 thành phần: I/O thuần như keyboard / memory / network device như thiết bị kết nối blutooth. Gồm chip controlling device + device itself
+Trong bộ nhớ trong hardware:
+- Secondary storage là external memory như hard disk, SSD(lưu OS) và gọi là extension of main memory. Main memory là bộ nhớ lớn duy nhất mà CPU truy cập được trực tiếp
+- Từ main memory trở xuống được quản lý bởi OS. Còn Register quản lý bởi compiler và Cache quản lý bởi hardware
+CLI tương tác trực tiếp với user interface:
+- Command line intepreter có thể built-in or dùng tên của ứng dụng
+
+Về kernel: Kernel chỉ là 1 phần của OS tồn tại trong vùng kernel space đặc biệt của mainmem mà các program khác k thể access vào vùng này được.
+Hầu hết các dịch vụ của OS thì đều do kernel access vào phần code đó thực hiện. Nó có thể thực hiện mọi instruction cũng như tương tác với tất cả phần cứng. Chế độ đó gọi là kernel mode còn các phần của software bth chỉ có quyền thực hiện được 1 phần machine instruction thì gọi là usermode.
+modebit lưu trong register để xác định chế độ hiện tại chỉ được phép chạy các lệnh nào, = 1 thì là user mode
+systam call đánh index cho các lệnh để gọi thì chạy vào. Nó có 6 type...
+
+Event từ I/O device asynchornous phát ra interrups signal qua 1 trong các line của system bus => interrupt driven system.
+Đang hoạt động có interrupt-> IHR run -> phần code IHR này chứa địa chỉ của dịch vụ ISR -> call ISR(đây là phần code của device driver chẳng hạn) -> resume
+Thì cái ISR xử lý đó có rất nhiều, mỗi routines khác nhau xử lý interrupts khác nhau
+
+breakmind:
+Software có thể pass code cho CPU trực tiếp / ask OS to send code to CPU để tương tác với hardware
+
+Các phần mềm chưa được khởi động được lưu ở external mem, khi chạy thì đều load vào main memory làm đệm, kể cả OS cũng được load vào main mem khi bật máy, tắt máy ngược lại. 
+Register nằm trong CPU, khi CPU thực hiện lệnh của 1 ct thì lệnh đó sẽ load từ main mem vào register. Nhưng data load theo từng cycle và data xử lý nhanh trong khi load chậm, register sau khi xử lý xong k thể chờ vài trăm cycle để load từ main mem vào register r mới thực hiện xử lý tiếp được nên sinh ra cache nằm giữa với bộ nhớ lớn hơn register và tốc độ nhanh hơn main mem. Cache làm cho time of cycle chuyển data giữa register và main mem giảm, CPU xử lý nhanh hơn.
+CLI, desktop là của OS, vc quản lý mem hay process là của kernel.
+
+
+
+# Chapter 2:
+2 vấn đề mở màn:
+1) Về bộ nhớ: Ta xét 1 chương trình có mảng global 10000 phần tử TH1 được initialize giá trị và TH2 chỉ được khai báo k có giá trị. TH1 kích thước file gấp nhiều lần TH2. Khi file từ code.c thành code.o(object file) sau khi compile thì có 2 phần là code(text) segment chứa code binary và data segment chứa initialized variable. Do đó nếu biến chưa được initialized thì phần data segment k cấp bộ nhớ cho mảng 10000 phần tử đó nên kích thước rất nhỏ. Khi khởi chạy ứng dụng thì object file(hay binary file) được load vào main memory từ hard disk(file system) thành executable file để chạy, lúc đó bộ nhớ mới cấp phát cho mảng đó toàn giá trị 0 thì nó mới bắt đầu chiếm bộ nhớ stack. Ban đầu, nó chỉ được lưu trong text segment rằng "hãy tạo ra 1 mảng 10000 phần tử" dạng text nên nhẹ.
+local variable và function params trong file binary chỉ được lưu tên vào text segment như 1 đoạn code bình thường, k có bộ nhớ nào được cấp phát. Khi chương trình được chạy, nó sinh ra data thì được lưu trong run time stack và dynamic thì lưu trong heap. Cái heap và stack này được gán fix và grow dần khi execute.
+Chốt: stack, heap lưu data được sinh ra khi chạy từng dòng code, giá trị của các biến local hay biến dynamic được gán; data segment cấp bộ nhớ cho các biến sử dụng khi compile, các biến đó là static hay global được gán giá trị đó, vc khởi tạo mảng global 10000 phần tử chẳng hạn sẽ làm data segment tăng nhanh; text segment lưu code, lưu các biến local, function params dạng text khi compile. Chỉ có text segment và data là gắn với binary file.
+=> do lưu dạng text kiểu phải làm gì, phải khai báo giá trị biến gì nên kích thước k lớn lắm vì bộ nhớ chưa thực sự xài tới để allocate; stack và heap cũng nhỏ khi gán 1 lượng fix ban đầu và mở rộng ra; nhưng data segment thì có thể rất lớn khi mà giá trị khởi tạo ban đầu lớn, điều này làm kích thước ứng dụng lớn ngay từ file.o
+2) program đang execute được gọi là 1 process. Cái executable file bên trên ta nói thực chất là OS tạo ra 1 process file và push vào main mem để chạy đó. Bản chất là file chạy trong process. Mọi process đều được created trừ process 0 tạo bởi system boots. 
+
+Process table là 1 DS lưu trong kernel của OS. Theo thứ tự process sẽ tạo PID tăng dần gắn cho mỗi process. 
+Process table độc lập với PCB và PCB chứa nhiều thông tin hơn về process, mỗi dòng của process table trỏ đến 1 PCB(xét process). 1 OS chỉ có 1 process table, còn 1 PCB gắn với mỗi process. Cùng được lưu trong kernel
+Trong PCB lưu nhiều thông tin bao gồm process state, các thanh ghi CPU. Process state có 5 trạng thái.
+
+Có 2 cách để process cha con thực hiện khác nhau nhưng thực chất cách 2 chỉ khác cách 1 là gọi wait ở parent để chờ con thực hiện xong mà thôi. 2 process k thể giao tiếp với nhau. 2 process dùng 2 memory space khác nhau.
+
+chain process, one level tree of process, multilevel tree of process.
+
+Các bước tạo 1 process mới(cơ chế lệnh fork): khởi tạo slot trong process table -> gán 1 PID unique cho child -> trạng thái là new -> copy code và image of parent trừ các shared memory -> trước đó parent có quyền thao tác với 1 số file thì có 1 biến counter chỉ định điều đó, bh biến counter đó cũng tăng lên chỉ định rằng các file này cũng có thể bị thao tác bởi cả con nữa -> OS push vào queue -> chuyển trạng thái sang Ready state -> return lại 0 cho child và pid của con cho cha
+
+hàm wait sẽ chờ 1 event interrupt nó, có thể là I/O event or 1 child process tạo ra từ nó finish execute
+zombie process and orphan process. 
+zombie process mà end trong khi cha chưa wait thì dù nó k chiếm mem hay CPU, nó vẫn chiếm 1 dòng trong process table kèm status exit code.
+Process scheduling trên 3 queue khác nhau xoay chuyển liên tục process nào cần running để vài CPU core nhưng có thể handle rất nhiều process -> 3 cái linkedlist. Nên nhớ là quá trình đưa process vào CPU từ ready to running chính là scheduler đang làm vc đó.
+Bên cạnh đó trong hình còn có time slice expired để 1 process k được thực hiện quá lâu còn nhường chỗ cho các process khác thì nó quay lại cái ready queue tùy theo mức độ priority được mà thực hiện nh hay ít.
+
+Khi process đổi trạng thái từ running sang 1 cái gì khác như 1 số event bên trên có nói thì cần 1 cái là process context. Nó lưu thông tin cần thiết để OS restart lại process nếu execute nó lần kế tiếp bởi scheduler sau khi thực hiện context switch. VD state change, value of register, pc,... thì những thông tin này gọi là process context được lưu trong PCB. Nên nhớ process context khác với PCB vì nó chỉ tính các thông tin cần để restart mà thôi. Sau đó nó add lại process vào ready queue thì thực chất nó add cả cái PCB đã được update vào ready queue đó.
+-> Cái đó là context switch from Process to Process. Là cái ở mức cơ bản, sau này sẽ có context switch cho thread.
+
+Các hàm C:
+(long)getpid()
+(long)getppid()
+childpid = fork() -> childpid là 0 nếu là child process và pid of con nếu là parent. Cả 2 cùng thực hiện tiếp phần code dưới trên 2 file process khác nhau. phần data và text của child được copy từ cha, 2 process identical khác mỗi pid -> Unix only
+childpid != wait(NULL)
+execl("/bin/ls", "ls", "-l", NULL) -> luôn terminate with NULL, gọi vào 1 phần code mới trong hệ thống
+exit()
+kill()
+CLI:
+tasklist liệt kê mọi process đang chạy trong máy
+
+
+
+# Chapter 3(khá đầy đủ bao cả slide):
+Khi chương trình exec, 1 chuỗi các address được gán cho thanh ghi PC trong quá trình execution thì cái đó gọi là 1 stream of instruction hay thread of execution của ct. Nó là uninterrupted stream of instruction cần vài trăm loop để thực hiện. Đó là ct chỉ có 1 thread. Nếu chuỗi các address of instruction đó chia ra làm nhiều phần khác nhau thì sẽ tạo ra multi thread trong cùng process
+Thread có cùng data, code segment nhưng register và stack khác nhau, ta hiểu nó chung và riêng cái gì từ chapter 2. Nhanh hơn process khi mà process child copy cả code và data segment để chạy độc lập. Kiểu mở 2 ứng dụng và mở 1 ứng dụng chạy 2 task khác nhau đó. VD static var được lưu trong data segment thì dùng chung.
+
+pthread_exit sẽ k release resource mà chỉ bắn signal báo parent mà thôi(thread id vẫn bị xóa khỏi process table). Khi parent gọi join thì resource của child được release(stack, code). Nếu parent chưa gọi join thì nó thành 1 trạng thái giống zombie process chỉ có điều process table với thread luôn bị xóa. Nếu parent kbh gọi join thì memory leak.
+Join và detach làm thread release mọi resource và luôn được gọi 1 trong 2 tránh mem leak
+
+Process bị exit nếu call exit or return or tất cả process của nó call pthread_exit. Nếu process có main thread k còn vc gì để làm mà cx k return sẽ block cho đến khi last thread của nó call pthread_exit. 
+Điều đặc biệt của phần này là bất cứ thread nào gọi exit cũng đều làm process chứa nó tắt luôn và đương nhiên tất cả các thread của process đo cũng dừng. Khác với vc gọi pthread_exit thì chỉ mình thread đó tắt thôi. Nếu process main chứa các process con mà bản thân nó gọi process_exit thì tất cả thread con và nó cũng tắt tương đương gọi exit
+
+Khi 1 thread mới được tạo ra trong 1 process. Thông tin về nó sẽ hiện trong process table lưu trong kernel đã biết ở chapter 2. Nó sẽ hiện ra 2 process cùng tên, cùng pid nhưng có tid khác nhau.
+
+Main function là 1 process, nên nhớ khi 1 process chạy, nó tạo ra ít nhất 1 thread là đầu tiên cho nó chạy.
+
+Xét process thì thanh ghi PC(lưu trong PCB) trỏ tới địa chỉ tiếp theo trên memory, gửi qua thông tin qua address bus và main memory nhận địa chỉ sẽ trả lại data qua data bus cho ALU. 
+Khi 1 thread mới được tạo ra trong process thì 1 row mới trong process table tương đương 1 TCB mới được tạo ra. TCB này cũng giống như PCB(lưu trong kernel) và lưu state của thread có các state y hệt như PCB(sai, chỉ có 3 state ready, running, waiting thôi), thanh ghi riêng, address trỏ đến stack riêng trên memory của nó. Nhưng khác với PCB nó còn lưu thêm 1 cái pointer trỏ đến PCB của process chứa nó hiện tại
+
+Parallelism là system thực hiện nh task cùng lúc dựa trên kiến trúc multiprocessor, mỗi processor lo 1 task. Concurrency là thực hiện nhiều task đồng thời nhưng thực chất là nhảy luân phiên. Thực tế đa phần dùng multiple core là kết hợp của cả 2, mỗi processor thực hiện song song luân phiên các task.
+Với multiplecore thì có 2 loại parallelism là:
+data parallelism khi có 1 cục data lớn cần operate same operation thì chia ra mỗi core thực hiện operation đó trên từng phần của data
+task parallelism VD có 1 cục data lớn cần operate các operation khác nhau thì mỗi operation chia ra 1 thread và mỗi core lo 1 thread
+
+Khi gán attribute cho thread khi khởi tạo thì có 3 atts là có thể custom được: state, stack, scheduling
+
+Điều đặc biệt là mọi hàm về IS đều k có trong OS mà trong library ở mức user-level
+code POSIX lib C of linux: => rất nhiều example trong file thầy
+pthread_init(*att) -> default att for thread
+pthread_create(*tid, *thread att, *function, *arg) -> tạo thread mới
+pthread_join(tid, NULL) -> wait for thread to exit, 2 là location for returning status
+pthread_exit(0) -> exit với status code là 0
+pthread_self() -> lấy thread id hiện tại
+pthread_detach(tid) -> báo rằng storage của thread có thể lấy lại khi nó exit trong khi pthread_join sẽ chỉ lấy được status.
+pthread_cancel(tid) -> 1 thread gọi cancel 1 thread khác
+pthread_mutex_init(&sum, NULL);
+pthread_mutex_lock(&sum);
+pthread_mutex_unlock(&sum);
+pthread_mutex_destroy(&sum);
+pthread_attr_getstack, pthread_attr_setstack
+pthread_attr_setscope, pthread_attr_getscope
+makepriority
+
+Thread context switch coi là context switch trong 1 process. Nhưng nếu thread cần chạy nó thuộc 1 process khác thì nó phải thực hiện kèm 1 process context switch nữa. Khi đó còn 2 công vc cần làm là: TLB là buffer chứa sự chuyển đổi từ virtual sang physical address sẽ bị flush để tránh lỗi address translation; MMU sẽ point vào page table của process cần chạy để reset the current address space.
+
+Có 2 loại thread là user level thread and kernel thread.
+User level thread thì thư viện thực hiện mọi thứ từ local function call đều trong user space, k gọi system call. Nó low overhead và chỉ run single thread. k cần kernel để manage
+Kernel thread thực hiện ở mức kernel space và thư viện support trực tiếp bởi OS. Gọi hàm của thư viện này sẽ gọi system call. More overhead ngang với vc schedule a process. Nhưng kernel level thread của cùng 1 process có thể execute in parallel
+=> Bth user viết 1 ct bằng user-level-thread và sau đó xác định các kernel schedulable entities gắn với process này. Tức là map từ ULT sang KLT at runtime để có parallelism.
+POSIX dùng thread-scheduling contention scope để dev sẽ map. Có 2 loại -> slide
+Cái VD nó chỉ nói lên rằng, khi thực hiện system call thì gọi vào kernel thread riêng và proccess B phải dừng để process kernel kia được thực hiện. Thực hiện xong thì process B chạy tiếp bth. Tức là từ 1 ULT sang 1 KLT
+
+hàm forkall sẽ dup all thread, fork1 dup 1 thread currently của process. exec() sẽ hủy toàn bộ program bao gồm cả các thread khác đã gọi để thực thi phần code mới. Do đó k nên dùng forkall nếu exec được gọi vì fork toàn bộ thread của process về xong gọi exec phát thì thread cũng xóa sạch thì phí. 
+
+Process xóa hay suspend thì threads trong nó cũng v. Process bị switch thì thread cũng v. 
+
+Thread bị block khi wait for event(register, stack được save lại và thread bị nhét vào event waiting queue). Khi có event sẽ kích hoạt thread xử lý trong ready queue. 1 thread có thể sinh ra threads khác
+
+linux dùng clone() tạo 1 task và các task cùng share data tùy mức độ flag ta custom. Mức độ đó có thể khiến task thành process hay thread tùy ý. Gọi clone() k thôi tương đương gọi fork(). Gọi clone() với cả 4 flag share tức task chính là thread.
+
+file save trên PCB k thực sự được mở trong thread mà mở trong process.
+
+
+Break mind 3 chapter đầu:
+User space là mọi process thuộc về user. Kernel space là phần main memmory thuộc quyền quản lý của kernel. 2 space độc lập chỉ tương tác qua system call. system call được exec hoàn toàn trong kernel space r trả lại cho user space. System call như 1 cái interface để dev truy cập service của OS.
+Thread ở trong cả user space và kernel space
+
+Khi 1 thread được tạo ra cũng sinh ra 1 TCB mới do kernel tạo ra và lưu trong kernel luôn. Ta giả sử thread này được tạo bởi user trong 1 process thì cái TCB chứa thông tin về register và stack của thread ở trong process. Chuyện gì xảy ra nếu ta chủ động gọi system call cho thread này. Lập tức nó chuyển từ user mode sang kernel mode và thực thi hàm system call trong kernel space. Nhưng hàm system call này cần số liệu mà cái register và stack kia là của thread trong process trong khi kernel và user hoàn toàn độc lập và k tin tưởng lẫn nhau. Do đó lúc này, nó có 1 stack mới. Tức là có 2 stack, 1 cho process, 1 cho kernel. Lệnh syscall sẽ chỉ thao tác với stack trong kernel. 
+Chú ý cái TCB lưu trong kernel. Stack kernel lưu trong kernel. Stack process lưu trong main memory để lấy ra thông qua địa chỉ reference của process. Thực tế, mọi thread đều có sẵn 1 kernel stack để dùng nếu nó gọi syscall. 
+2 process thì luôn tồn tại độc lập và k share bất cứ thứ gì vs nhau.
+Hàm clone của linux luôn tạo 1 task mới và các task có share nhau cái gì hay không là tùy loại task là thread hay task là process.
+
+Thread có thể share với process và thread khác(trong cùng process) stack memory space(stack,..) và static area. Tức là cả stack, heap, data, code segment(register chắc là k share). Ta cứ tưởng bọn nó dùng chung data và code còn stack và register là riêng nhưng thực chất thứ chúng share nhau memory address và nếu dùng pointer cứ gọi vào thì 1 thread hoàn toàn truy cập vào stack của thread khác được. Nên nhớ bản chất là ban đầu có 1 stack xong họ chia ra từng phần cho các thread nên dùng pointer truy cập đến đâu thoải mái.
+
+Trong linux thì k có PID hay TID mà gọi chung là taskID. Nên nhớ mỗi khi clone là tạo ra 1 task mới với 1 id mới + 1 dần lên nên nó khác nhau.
+PID, TID đều do kernel tạo PCB, TCB sẽ gán giá trị cho PID, TID.
+
+1 thread là 1 TCB execution context(PC, register, stack pointer,..). Khi tạo 1 thread mới pthread_create thì kernel tạo TCB và scheduler dùng các thông tin trong TCB để schedule thread. Ta cũng tạo ra 1 scheduling object can be scheduled by scheduler là 1 sequence of instruction mà sẽ được exec trong thread đó. Scheduler push thread vào linkedlist (priority queue). 
+
+Cái Scheduler cũng là 1 thread thuộc về kernel có nhiệm vụ xác định thread để exec. Thanh ghi PC bản chất nó là 1 trường riêng trong TCB. Khi thread thực thi trong kernel, nó kb chuyện gì xảy ra trong process và nên nhớ user space và kernel space luôn độc lập. Tương tự kernel cũng kb gì về user thread hay user stack mà nó chỉ thực hiện những gì nó được nhận.
+1 CPU có thể process 1 thread tại 1 CPU cycle nào đó và scheduler quyết định cái nào chạy. Nhiều CPU thì mới parallelism nhiều thread 1 lúc
+Giá trị của thanh ghi PC k thể thay đổi từ phía user process được mà system thay đổi.
+
+Kernel có thể tạo ra own thread cho nó
+Sự khác biệt lớn nhất của user thread và kernel thread là 1 cái chạy trong user space, 1 cái trong kernel space
+
+
+
+# Chapter 4(quá dài nên cần kết hợp slide):
+Khi process được schedule sẽ chia ra làm 2 loại cycle: CPU-I/O burst cycle
+Có 2 loại process khi chia theo thời gian cycle hoạt động của nó khi scheduling: Interactive processes and compute-intensive processes
+Về thuật toán scheduling có 2 loại: preemptive và nonpreemptive. preemptive như kiểu thay đổi được, xóa được ngay ấy, lưu lại để thực hiện về sau.
+- nonpreemptive tức là CPU khi thực thi 1 process thì process sẽ keep CPU cho đến khi nó release tức là cho đến khi cái process đó terminate or làm gì đó mà bị chuyển sang waiting state chứ k có time quantum gì ở đây
+- preemptive tức là scheduler dùng 1 lượng quantum time để thực hiện 1 process và sau ktg đó thì chuyển từ running sang ready state hoặc ép buộc xóa process khỏi CPU nếu 1 process có độ ưu tiên cao hơn cần thực hiện.
+Preemptive cho service tốt hơn về mặt tổng thể các process nhưng overhead nhiều hơn vì phải chuyển qua lại. Data có thể k nhất quán và cần 1 kỹ thuật đồng bộ. VD nó có thể dừng 1 process update 1 biến mà cần dùng ở 1 process khác vì quantum time đã hết.
+
+5 thuật ngữ của scheduling cần nắm vững: CPU utilization, Throughput, Turnaround time*, waiting time*, response time*
+
+CPU kết hợp nhiều tổ hợp phức tạp của các thuật toán scheduling. Ta chỉ cần học 1 phần nhỏ là 5 basic alg.
+- FCFS thì ready queue là FIFO, là 1 nonpreemptive buộc proces phải chạy cho đến hết or có I/O. VD Có CPU bound thì I/O bound process phải đợi. K optimal vì waiting time biến đổi mạnh khi thứ tự process tới khác nhau.
+- Shortest Job First là nonpreemptive và better version of FCFS. Để đoán được Next CPU Burst dài bnh thì dùng công thức dựa vào dữ liệu đoán lần trước đó + dữ liệu CPU trước đó thực tế + 1 số alpha cho là 1/2 để ra độ dài CPU burst tiếp theo.
+Phiên bản preemptive của nó gọi là Shortest remaining time first khá dễ. K dùng quantum time mà khi có process mới thì check, process thực hiện xong thì check -> chỉ check 2 lúc đó thôi
+- RR là preemptive FCFS. Cứ hiểu nó push dần vào queue và mỗi process sẽ khởi động lại quantum time là 4 cho mỗi process mỗi lần. Mỗi process có 1 q time tầm 10-100ms. 
+Nhưng phải chọn q như thế nào. Ta đã biết RR có thời gian turnaround cao vì có thể sắp xong r nhưng hết quantum time lại phải chờ 1 vòng sau nên thời gian gửi vào và tg có ra sẽ cao nhưng response time nhanh hơn SJF vì kiểu gì nó cũng được thực hiện ngay sau 1 lúc chứ SJF có thể chờ mãi k được thực hiện nếu time dài => q ít nhất cũng phải lớn hơn context switch time vì nếu nhỏ hơn thì thời gian xử lý dành cho 1 process còn nhỏ hơn thời gian chuyển giao qua lại. Context switch time chỉ tầm < 10 microsecond. Nếu q lớn quá sẽ giống FCFS, nếu q nhỏ thì phải đủ lớn hơn context switch time, nếu k overhead sẽ rất lớn. Performance phụ thuộc vào size của q.
+Có n process trong ready queue thì k có process nào phải chờ lâu hơn (n-1)*q time units.
+- Priority Scheduling cũng chỉ là theo priority mà thôi. Là nonpreemptive. Có process kbh được execute -> Aging
+Còn có Priority Scheduling with RR có quantum time.
+Xác định priority tùy vào internal process or externall process
+Priority scheduling hiểu là: mặc định k nói thì priority càng nhỏ là càng ưu tiên; Các process thực hiện theo thứ tự ưu tiên nonpreemptive. Nếu 2 process cùng tồn tại mà cùng thứ tự ưu tiên thì sẽ dùng RR với 1 timequantum.
+- Multilevel Queue thì có thể có nhiều process cùng priority. Priority chia theo loại process.
+Multilevel Feedback Queue cho phép các process move qua lại giữa các queue. I/O bound càng nhiều càng ưu tiên hơn CPU bound. => Aging
+=> Các thuật toán này đều là process scheduling
+
+Multilevel queue: các queue có thể dùng FCFS hay RR tùy loại khác nhau có priority khác nhau. VD batch process là các proccess k tương tác với user, tự được sinh ra, có priority thấp nhất và chỉ thực hiện khi có tg mà thôi. 
+
+Thread scheduling thì ULT schedule to compete within process thg done via priority by programmer. KLT is scheduled on available CPU thì compete among all threads in system.
+1 cái là PCS, 1 cái là SCS tương đương với 2 attributes PTHREAD_SCOPE_PROCESS và PTHREAD_SCOPE_SYSTEM
+
+3 hệ điều hành scheduling khác nhau, cả 3 cái cùng priority based, preemptive
+solaris: thì chú ý là real-time thread, system thread dùng multilevel queue, k có feedback. Còn user thread như timeshare, interactive thì là dùng MFQ, tức thread vào ở 1 queue và ra sẽ sang 1 queue khác.
+window: priority của 1 thread xác định dựa trên process chứa thread đó thuộc priority class nào(có 2 loại class đó), trong class đó thì các thread có priority level như nào => combine priority class và priority level tạo base priority cho thread. Chỉ có mỗi 2 cái này mà nó nói mấy slide lận. Trong 1 priority class, 1 thread có relative priority level. Có bảng. 1 process thuộc 1 class nào thì new thread của class đó có priority mặc định là normal khi mới vào.
+New process sẽ mặc định vào NORMAL_PRIORITY_CLASS, initial priority của thread(base priority) cũng là normal relative priority. Mặc định 2 cái đều là normal.
+linux: 2 class, 1 cái gán static priority, 1 cái dùng CFS. CFS chi tiết. CFS k có quantum time mà tính động là target latency
+Tính xem mỗi task có bnh time slice nếu có n task với target latency là 20ms. Ý là target latency là tổng tg và time slice là tg 1 task thực hiện chiếm trong k target latency đó. Thì mỗi task thực hiện trong bao lâu nếu case lý tưởng.
+Nice value of priority
+Nice value ảnh hưởng time slice: có command nice giúp user chỉnh nice value của task; Scheduler cũng tự động change priority của task cho phù hợp: -5 cho interative task, +5 cho task more CPU bound; nice value cũng ảnh hưởng weight của task là tỉ lệ thời gian nó chiếm trong target latency. nice càng nhỏ thì weight càng lớn.
+
+Sự khác biệt chính giữa 3 hđh là:
+solaris có 6 class và chỉ có timeshare với interactive là multilevel feedback queue và cũng là 2 loại thread có priority thấp nhất, priority và time slice nghịch nhau với MFQ. Nếu thread có priority khác nhau thì hiển nhiên ưu tiên priority cao hơn nhưng nếu giống nhau thì dùng round robin tức là mỗi priority đều có 1 queue dùng RR. q time càng nhỏ nếu priority càng lớn và ngược lại. Chỉ thread có priority thấp hơn sẽ k được thực hiện nếu thread có priority cao hơn chưa được thực hiện.
+window: có 2 class thực chất class thứ 2 là 5 class nên cũng có 6 class và priority của 1 thread dựa vào 2 yếu tố. Mỗi priority là 1 queue riêng. Nó traverse qua các queue từ high đến low cho đến khi tìm được 1 thread ready to run. Priority cũng có thể đổi(MFQ) 
+Linux: chỉ có 2 class, real time gán static, normal dùng CFS. CFS favor interactive task và dùng RBT chứ k dùng queue như 2 cái trên(vì interactive task thao tác CPU burst ít nên thg ở bên trái của cây). Node là task, thứ tự sắp xếp theo vruntime. Nó còn có target latency, nice, weight. Nó cũng chia khoảng priority cho 0-99 cho realtime task và 100-139 cho normak task. Window hay solaris cũng chia mà.
+
+vruntime của linux là thời gian mà 1 task đã run kể từ lúc nó created. Nó khá là công bằng vì mỗi task có 1 slice time khác nhau thì ta có thể đảm bảo task nào quan trọng cho thực hiện lâu hơn. Và 1 task khi xoay vòng tới sẽ buộc phải thực hiện hết các task khác thì kể cả task chả cần thiết cũng chắc chắn thực hiện được 1 tí theo tg. Điều này khiến nó giống RR dưới dạng cây.
+quantum time của CFS phụ thuộc vào target latency được xác định bởi scheduler và number of task -> change dynamically
+
+preempted là hành động 1 thread được lưu lại để chạy về sau vì hiện tại có 1 cái priority cao hơn cần chạy. Nó sẽ đổi trạng thái và sẽ được chạy sau đó nếu có thể
+
+time slice chính là quantum time
+
+VD: slide 5.57 của solaris khi 1 thread có priority là 30 mà thời gian thực hiện là 40ms vào queue thì chuyện gì xảy ra khi queue này được thực hiện. Khi thực hiện RR đến nó thì nó hoàn thành trong 40ms k dùng hết quantum time 80ms nên bị chuyển sang chế độ I/O burst hay nó được gửi vào I/O queue để bắt sự kiện. Như ta đã biết 1 process chỉ có hoặc CPU burst, hoặc I/O burst trong suốt quá trình tồn tại tương đương với trạng thái của thread cũng v. Sau đó thì 1 thread khác sẽ được chạy tiếp với quantum time reset ta k cần quan tâm. Khi chuyển sang I/O tức process đó chờ sự kiện tiếp theo từ người dùng, nếu có 1 sự tương tác nào làm process này hoạt động tiếp thì nó sẽ promote priority của nó lên 53 và thực hiện RR tiếp trong queue 53, gọi là return from sleep.
+Dễ thấy priority của nó tăng lên là vì hệ thống ưu tiên I/O burst được xử lý hơn.
+
+Linux có user task và system task.
+
+2 sự kiện scheduling làm interrupt a process và khiến nó return directly to the ready queue là quantum time expired(VD 1 thread chạy 20ms và quantum time 10ms thì sau 10ms nó sẽ bị discheduled và push to ready queue) và khi 1 thread có higher priority come cx gây ra điều này
+Nhưng sự kiện thứ 2 k đúng nếu scheduling alg là nonpreemptive vì alg này khiến thread chạy cho đến khi thread kết thúc CPU burst và does the I/O. Nhưng nếu ta xét trong 3 hđh phổ biến đều là preemptive nên 1 thread có higher priority cần thực hiện sẽ terminate thread hiện có trong CPU, kick out r push nó vào ready queue, thay thế bằng thread mới. 
+Các sự kiện ảnh hưởng đến thread là: thread cao hơn vào, thread hết quantum time, bản thân thread gọi pthread_exit, 1 I/O event tác động làm thread chạy 1 phần mới nhưng cái I/O event ta ít xét đến nó.
+Các sự kiện ảnh hưởng đến process là: gọi exit, gọi return, mọi thread đều exit, main thread gọi pthread_exit, gọi context switch cho process
+
+Process có thể change state inside a same CPU burst. VD 2 sự kiện trên xảy ra khi nó đang ở CPU burst làm nó chuyển từ running sang ready. 
+
+Queue quantum = 8 -> queue quantumm = 16 -> FCFS
+Nếu 1 process có CPU burst là 12ms thì nó sẽ chạy vào queue dầu tiên bởi RR và hết quantum time sẽ bị de-scheduled sang queue tiếp theo r thực hiện last 4ms r nhảy vào I/O queue.
+Sau khi I/O burst xong nó lại thực hiện CPU burst sẽ lại quay vào first queue như ban đầu.
+Nếu vẫn là process trên nhưng vừa thực hiện được 6s ở queue thứ nhất thì có event gọi đến nó thì nó chạy lại vào queue thứ nhất(ở đây ta hiểu là kp nó chủ động wait I/O mà là có I/O gọi nó xong làm nó cần phải thực hiện task tiếp CPU burst xử lý cái I/O đó thì nó quay lại first queue để thực hiện thôi).
+
+Trong multilevel scheduling thì mỗi queue có 1 scheduling alg khác nhau như VD ở trên có 1 queue khác nhau về quantum time và thuật toán. 
+
+Trong solaris, nếu process k hoàn thành CPU burst trong quantum time của queue thì priority của nó tăng hay giảm. Là giảm, đây là tính chất bth của multilevel feedback queue.
+
+Register lưu context của process. 
+
+Thứ chúng ta schedule thực chất là thread chứ kp process vì process chỉ là 1 big file còn thread là phần thực thi của process. Nếu ta schedule 1 process tức là nói ta schedule các thread trong process đó.
+
+Bẫy SJF bình thường là nonpreemptive nên task nào đang làm sẽ làm mãi thôi. Trừ khi nó thực hiện xong hay nhiều task đc add cùng lúc thì mới chọn ra task kế tiếp nhỏ nhất để làm. Còn Shortest-remaining-time-first thì task mới vào phát có thể ngắt luôn
+
+
+
+## Nửa kỳ sau
+
+# Main memory: 
+Process là 1 file và file thì luôn chiếm memory, size của file là lượng byte nó chiếm. Lượng byte này được ánh xạ vào address. Vì mỗi byte trong main mem có 1 address. Computer dựa vào address của file để lấy được content file trong bộ nhớ(sau khi file được load vào mainmem) là 1 lượng byte nhất định có size bằng với size của file.
+Address space của 1 process nói chung cũng chỉ là set of address be used by a file process.
+VD: máy tính mainmem có 32GB tức 2^32 bytes -> sai
+Main mem là 1 chuỗi byte bắt đầu từ address 0, giả sử nó có 64B lần lượt các address liên tiếp và có 1 chương trình kích thước 4B. Thì ta load file đó vào mainmem và lượng byte mà file sử dụng cũng là 4 bytes khác nhau trên mainmem. Address space của nó là các dịa chỉ xác định nó được lưu trên bộ nhớ VD {0, 2, 5, 9}. Giả sử nó lưu 4 byte rời rạc như v. Có 2 loại address space là virtual và physical address space.
+Virtual address space luôn bắt đầu bằng address 0 và address mà 1 process used trong virtual address space luôn là consecutive. Kích thước bằng kích thước file:
+VD: Virtual address space: 0  1  2  3  4  ...  2^m-1 với 2^m-1 là size of file - 1 và 2^m-1 chính là address cuối cùng của virtual address space của process file đó. (Từng block)
+Physical address space là địa chỉ trên bộ nhớ vật lý thật lưu data, thực tế VAS ánh xạ sang PAS. VD: VAS có 4 bytes address 0 1 2 3 ánh xạ sang 4 ô nhớ 1 3 5 7 trên PAS. PAS cũng là các ô nhớ liên tiếp 0 1 2 3 4 5 6 7 nhưng 1 process file được lưu rời rạc ánh xạ lên đây dù được lưu bằng ô nhớ liên tiếp trên VAS.
+
+Trước khi store trên physical mem thì virtual mem phải decompose thành các brick. Nó tính toán VD virtual space rộng 2^4 size được tách thành các page same size, nó định nghĩa page là 2^2 = 4 bytes thì VAS phải có 4 pages. Điều này tùy thuộc vào physical mem phải có có size frame cũng là 4 bytes mới lưu được. 
+VD logical mem: page0, page1, page2, page3
+Page table: 0->1, 1->4, 2->3, 3->7 có 4 entry này. Size of page table phụ thuộc vào số lượng page. page0 của VAS map vào entry 0 của Page table,...
+Physical mem có các frame number: 0 1 2 3 4 5 6 7 trong đó 1, 3, 4, 7 là thứ tự các bytes lưu content của process file trong bộ nhớ tương ứng với các page. Process file load vào main mem chia thành từng cục frame 1 đó
+=> Tức Page table có 4 entry để map 4 page vào frame
+
+1 page có thể có nhiều address. VD: page0 có 16 bytes là page đầu tiên nên trên VAS lưu từ address 0-15 và từ address 16 trở đi là page tiếp theo. Trên page table ánh xạ 0->1 tức ánh xạ tới frame1 trên bộ nhớ vật lý mà frame có kích thước bằng với page tức là địa chỉ từ 16-31 sẽ lưu frame1 và lưu content của page0 của VAS
+
+Cần bao nhiêu bit để access 8 bytes trong process file, tức VAS của process là 8 bytes. Dùng 3 bit. VD cần access byte 0 thì truyền vào 000, byte 1 thì truyền vào 001. Do đó size of file thường biểu diễn dạng 2^n để ta biết cần n bit để address mọi byte trong file đó. k nói về vc chia page thì k cần chia page
+
+Sau khi tìm ra được address frame rồi, bh ta cần tìm address của từng instruction inside frame. Có VD trong slide nói rất rõ. 
+Nó tách logical address thành 2 phần. Giả sử VAS có 2^m bytes mà 1 page có 2^n bytes. Cần m byte để biểu diễn address của từng block nhưng nó chia thành 2^m/2^n page tức 2^(m-n) page nên chỉ cần m-n bit để biểu diễn index of page còn n bit cuối trong m bit sẽ biểu diễn offset trong trong 1 page kích thước 2^n. Nó lấy m-n bit đầu để xác định entry page table nào. Sau khi xác định address của frame rồi sẽ kết hợp với n bit cuối để xác định offset trong chính frame đó, vị trí nào là đến block cần tìm hay instruction cần tìm. Page table có 2^(m-n) entry và cần dùng m-n bit kích thước. 
+Ta hiểu là lượng page luôn là 2^m chứ k có chuyện lẻ
+
+Page Table nằm trong kernel space trong main memory(physical mem RAM), no user process can access page table => Để access vào page table thì computer phải biết address đầu tiên của PageTable. Khi process created thì Page Table cũng created và PCB của process đó có các register lưu address của PageTable của nó trên mainmem.
+For each instruction sẽ phải fetch cả address page table và data instruction => cost twice => access của mainmem là chậm. 
+1 page table có thể có đến vài ngàn entry, mỗi entry search tốn 1 CPU cycle. CPU fetch logical address từ thanh ghi PC. 
+Address từ thanh ghi PC là logical address và được transform thành physical address thông qua Memory Management Unit sẽ sử dụng Page Table access vào frame
+Giải pháp là dùng TLB thì sẽ k mất công tìm page table trong mainmem r lại tìm index sang frame. Nếu m-n bit đó đã có sẵn trong TLB thì lấy luôn, k có thì phải lấy page table từ main mem và update TLB.
+
+1 process file có size là 2^10 bytes -> có 2^10 addresses trong VAS và PAS
+
+Các địa chỉ ở trong cùng 1 page có cùng giá trị m-n bit đầu tiên
+
+Khi 1 process được tạo ra thì address đầu tiên của process k tồn tại và chưa được schedule thì làm sao để start thanh ghi PC ? => Bởi vì khi tạo process thì máy cũng tạo PCB. Trong PCB có trường register PC, trường này quyết định giá trị của thanh ghi PC khi thực hiện context switch chạy cái process này. Giá trị của PC trong PCB khi process được tạo ra lần đầu tiên là first address of virtual address space of process file này. First virtual address of the process mà PC đc gán ở đây là 0. Đồng nghĩa khi context swith lần đầu tiên thì PC của CPU được gán là 0 từ PC trong PCB. Nếu chạy xong or k tìm được địa chỉ vật lý thì nó sẽ auto increment PC đó lên 1
+
+Vấn đề là Page Table lớn tốn nhiều bộ nhớ và thời gian. Khi đó người ta dùng Hierarchical Page Tables hay Two-Level Paging để chia page thành nhiều page nhỏ hơn và cũng chia địa chỉ logical address thành 3 mức: p1 offset của outer page table, p2 offset tới page of page table, d offset của memory frame cuối cùng, như v thì page table được chia ra chứ kp 1 page table to đùng chứ mọi thứ nữa. VD 1 logical address 32 bit được chia thành 10 10 12 thì 10 bit đầu của address dùng làm offset trong outerpage tức index outerpage có đến 2^10 entries, mỗi entries dùng 4 bytes cả cái page table dùng 2^10*4 = 2^12 = 4096B.
+Cứ tưởng tượng kiểu chia cái process file làm 2^10 phần bằng nhau, mỗi lần lại có 2^10 phần nhỏ bên trong, mỗi phần nhỏ đó trỏ tới 1 frame
+
+Cách 2 để reduced size of page table là dùng hash page table. VD process file có 8 VAS. Nếu dùng Page Table bình thường ta cần 3 bit. Ta muốn giảm size of page table xuống còn chỉ cần 2 bit tức 4 address bằng hashing thì ta mode cái address của VAS với 2^2. Khi đó Vd 2 address 0 và 4 của VAS cùng đi vào same entry của page table là 0, khi đó ta phải dùng linked list cho mỗi entry of page table kiểu: 0 []->[0->23]->[4->30] r cho nó duyệt. K nói gì về page thì đang coi 1 addres 1 page
+
+Inverted Page Table thì chỉ dùng 1 page table và số lượng entry của page table bằng số lượng frame trong physical memory. Cái page table nào thì tương đương index thứ tự vị trí đó trong page table. First entry for frame 0. Với cách này ta hiểu là chỉ có 1 page table duy nhất cho tất cả mọi process, do đó trong hình ta thấy page table lưu thêm pid của process hiện tại đang trỏ tới. Tức là page table lưu liên tiếp các entry cùng pid, dựa vào pid tìm entry cho page 0 của pid đó và từ đó tìm index của page cần tìm, cái index đó là frame number của mem luôn. Cách này cũng làm giảm size của page table về tổng thể nhưng phải tìm thêm mỗi khi cần tìm instruction
+
+Bỏ segmentation -> k thi
+
+Swapping là quá trình lưu toàn bộ process từ main mem vào hash disk, bao gồm cả stack và mọi thông tin trên mainmem tạo ra trong quá trình chạy và load 1 process khác từ hard disk vào main mem. Nhiều process quá lớn so với phần trống còn lại của RAM thì vc swapping là bắt buộc khi nó lưu process có low priority vào hard disk để load process to vào. Linux và Window k rõ bh nó còn dùng swapping nữa k.
+Swapping có thể dùng với Paging system.
+
+
+
+# Virtual mem
+Virtual Memory là cho người dùng cảm tưởng mình có nhiều memory hơn trong RAM dù thực tế RAM là tất cả real memory mà ta có. VD RAM có 4GB or 8GB nhưng Virtual Mem làm người dùng cảm thấy mình có tới 100GB bộ nhớ. Process của ta có thể dùng nhiều hơn 4GB RAM đang có thì system sẽ cung thêm RAM cho ta dùng, gọi là virtual ram hay virtual mem. 
+Cơ chế rất đơn giản là OS k store toàn bộ page trong main mem mà chỉ store subset của nó. VD logical mem của process có 8 pages nhưng chỉ có 3 pages là store trong RAM, còn lại lưu trong hard disk. Store trong RAM có giá trị valid-invalid bit là valid, store trong harddisk thì giá trị bit đó sẽ là invalid. Khi cần đến phần memory đó thì system thực hiện paging tìm frame cần lấy trong harddisk và lưu vào main mem RAM, lưu frame number vào page table. Cần phân biệt hành động này là Paging khác với Swapping là cơ chế load whole process bên trên. 
+Cơ chế: lấy logical address tìm entry đó trong page table -> thấy invalid bit -> create 1 interrupt -> trap -> OS solve problem và xử lý lỗi nếu có lỗi -> k lỗi mà là thiếu frame thì send request tới harddisk -> bring in missing frame vào freeframe trong physical mem -> gửi address của free frame đó vào page table -> gửi lại data cần lấy
+
+Vì 1KB = 1000B trong decimal và băng 2^10B=1024B trong binary
+VD: RAM có 4KB tức 2^12 byte. Page size là 256bytes tức 2^8 bytes. Process là 2^14 bytes => process lớn hơn cả physical memory nên k thể store trong RAM được. Khi chạy process, OS sẽ build page table cho process này. Số lượng entry của page table là 2^6 kéo dài từ 0 -> 2^6-1. Nó phải dùng virtual mem để chạy cái process này. Khi process được lưu trong bộ nhớ thì nó là 1 file có kích thước 2^14B lưu trong harddisk như SSD. Khi create process thì nó tạo page table và PCB lưu trong kernel.
+
+Hệ điều hành 64 bit hầu hết hiện nay cho phép dung lượng địa chỉ cực lớn và thậm chí có process lớn max đến 2^64 bit. Miễn là data center có harddisk đủ lớn để chứa được process này thì vẫn chạy được với RAM nhỏ nhờ Virtual mem. máy 64 bit hỗ trợ tới 24TB physical mem mà laptop hiện nay k đạt được mà phải là datacenter lớn.
+
+Thực tế RAM khi dùng ta cũng k tận dụng được tốt ưu vì OS cũng là 1 phần mềm dùng RAM và có thể RAM 4GB thì nó tiêu mất 1-2GB r, chỉ có lượng còn lại dành cho user process. 
+Trong window chẳng hạn thì số lượng bit 32 hay 64 nó chính là dung lượng địa chỉ. VD window thì page table có khoảng 5-6 level thì 64 ô bit sẽ chia ra làm nhiều phần tương ứng từng level đó.
+
+Lúc đầu tiên start process luôn là 1 page fault vì page table chả có gì
+Khi check 1 page mà page đó k được lưu trong main mem thì gọi là Page Fault. Khi process bị dischedule thì nó lưu lại vào harddisk và page table của nó bị invalid vì k còn tồn tại trên RAM nx và valid-invalid bit được set thành invalid. Khi đó page gọi là page fault và khi start nó thực hiện page fault, lấy page từ harddisk đáp lại vào main mem.
+Vì solving page fault take time nên process does the page fault sẽ bị dischedule cho another process schedule vào.
+Khi page fault được xử lý, instruction gọi vào page table gây page fault được reexecuted. Khi gọi lệnh fork thì thực chất nó copy parent process ở đây là page table của parent process vào mainmem or harddisk là xong vì reference vào địa chỉ vật lý là giống nhau cho cả 2 process chứ kp copy hẳn địa chỉ vật lý sẽ rất tốn. Cả child và parent cùng reference vào same frame.
+Nếu parent mà modify content của frame, nó sẽ thực hiện duplicate cái frame đó và update page table vì con và cha phải dùng content frame khác nhau.
+Dễ hiểu: P1 là cha, fork phát ra P2 giống page table P1. P2 muốn modify entry 3 -> frame 4 mà nó trỏ tới, OS copy frame 4 thành 1 frame mới là frame 51, update page table P2 entry 3 từ frame 4 thành frame 51 và P2 modify frame 51 thoải mái.
+Page replacement thực hiện khi 1 frame cần được chạy nhưng k có trong main mem và bộ nhớ main mem cx k còn free frame cho process này. Cần phải load 1 frame nào đó vào harddisk để chỗ đó bị trống thành free frame + page fault thì sẽ load cái frame cần dùng lên từ harddisk vào thế chỗ. page nào bị remove khỏi main mem gọi là victim. Có nhiều thuật toán giúp tìm victim: FIFO, LRU,..
+K có thuật toán làm page fault optimal vì phải nhìn trước tương lai reference string. 
+
+Mỗi process được allocate 1 lượng frame nhất định. 
+Fixed allocation là mỗi process được allocated 1 lượng frame như nhau, chia đều total frame cho từng process. priority allocation thì mỗi process được allocated lượng frame phụ thuộc vào priority càng cao thì càng nhiều frame, phụ thuộc vào kích thước nx chứ. Càng nhiều frame tổng thể thì càng ít page fault vì lúc nào cũng tìm được frame có sẵn
+
+Thrashing thì có quá nhiều process làm nó page fault liên tục, thời gian page fault solve lớn hơn thời gian execute. CPU do nothing for task vì bận solve page fault.
+
+Trong các hệ điều hành, nó luôn giới hạn size của các process max. VD window 32bit mà process vượt quá 2GB có thể bị system reject. logical address max từ 0 đến 2^22-1
+
+[frame1][frame2][frame3][frame4][frame5]
+delta = 5
+-> WSSi của process i -> WSS1 = 3 = D -> m > 3 là cản thrashing cho process 1
+
+interval time, reference bits
+[frame1 - 111][frame2 - 111][frame3 - 011][frame4 - 011][frame5 - 011]
+interval time = 3ms
+sau 6ms: 
+[frame1 - 101][frame2 - 111][frame3 - 011][frame4 - 001][frame5 - 001]
+sau 9ms:
+[frame1 - 011][frame2 - 011][frame3 - 011][frame4 - 000][frame5 - 000]
+=> D = 3 => m > 3 => Working set strategy
+
+
+
+# Synchonization:
+VD: 2 thread 
+t1, t2 thực hiện X = X + Y1 và X = X + Y2 với x = 0 và y1 = 5, y2 = 10 => kết quả mong muốn là x = 15. Nhưng thực tế với instruction cơ bản này thì máy tính nó đọc thực tế là mã máy cơ.
+VD t1: LOAD x vào register R1, LOAD y vào register R2, R1 += R2, STORE(R1) vào x trong mainmemmory. Tương tự với t2. Tức là để thực hiện 1 dòng trên, thực chất CPU thực hiện nhiều dòng lệnh khác. Context switch có thể xảy ra tại bất cứ đâu khi thread chạy, tức có thể t1 mới thực hiện 2 instruction LOAD xong thì bị switch sang t2 thực hiện tiếp, mọi thứ của t1 được lưu vào TCB1 rằng R1=x=0, sau khi thực hiện t2 xong thì quay lại thực hiện t1 tiếp từ R1 = x = 0 làm cho kết quả cuối là R1 = 5 lưu vào x chứ kp là 15.
+Lưu ý ở đây x là global var, ta expect nó lần lượt nhưng 2 thread lại thực hiện song song => synchronization problem => solve = mutex or semaphore.
+
+Mutex có 1 loại biến mà ta truyền vào hàm VD pthread_mutex_lock để chỉ định, thread nào đang sở hữu biến mutex này sẽ có thể thực hiện hàm bên dưới. Nếu biến &mutex đó đã có thread khác đang dùng thì thread này k thể đi tiếp mà phải đợi.
+Các hàm machine instruction như LOAD là các hàm atomic mà khi thực hiện k thể dừng lại giữa chừng, nó là đơn vị nhỏ nhất của các lệnh mà phải thực hiện. Thực tế khi dùng mutex thì các hàm kẹp giữa lock và unlock gom lại thành 1 cục và có thể coi là 1 atomic function vì k thread nào có thể xen giữa vào nó khi đang thực hiện dở. Phần này cũng gọi là critical section
+
+Cái này nó cũng nói chung với cả process
+3 quy chuẩn của critical section:
+Mutial Exclusion: đảm bảo khi 1 process execute critical section của nó thì k có process nào khác có thể thực hiện their critical section.
+Progress: khi 1 thread muốn thực hiện critical section của nó thì nó phải able to do that, k được bị hoãn vô thời hạn, k deadlock.
+Bound waiting: đảm bảo 1 thread k được chờ quá 1 lượng giới hạn nào đó trước khi nó được execute critical section của nó. Đúng ra là ktg khi 1 process tạo 1 request enter vào critical section và trước khi request đó được đáp ứng thì những process khác được sẽ được quyền thực thi critical section của chúng trong 1 giới hạn số lần nhất định. bound càng lớn thì các process khác được thực hiện càng nhiều và process kia càng được đáp ứng lâu hơn
+
+test&set là 1 instruction riêng của phần cứng nên chắc chắn là atomic rồi, như LOAD ấy, k thể bị dischedule giữa chừng. Nó dùng global var lock mặc định là false như trong slide giống kiểu biến lock chống reentrancy của solidity. Vòng while true k làm gì cho đến khi nó false, tức thread dùng nó đã release lock. 
+Khi dùng test&set thì k có cơ chế xử lý boundwaiting, tức là có process có thể phải chờ mãi mãi vì hoàn toàn dựa vào may mắn khi các process compete to get the lock. Ta phải xử lý thêm để có bound-waiting như slide 27: Dùng 1 mảng boolean waiting[] có số phần tử là số lượng thread compete to get the lock, mặc định là false, các thread đang chạy sẽ là true. 
+VD: có 10 process bth dùng test_and_set thì 10 process đó có thể có process kbh được thực hiện. Giả sử ta muốn 5 process chắc chắn được thực hiện nên implement waiting[] cho 5 process đó như slide 27. Bắt đầu vào cả 5 ở TT waiting, nếu 1 trong 10 process release và để 1 trong 5 process này bắt được thì VD process 3 bắt được thì nó thực hiên critical section, thực hiện xong, nó duyệt tất cả 5 process có mảng waiting theo thứ tự 4 5 1 2 lần lượt, cho waiting = FALSE từng cái để bọn nó chạy tiếp. Khi cả 5 process thực hiện hết r k còn TT waiting nữa thì j=i và lock = FALSE sẽ trả lại lock cho 5 process k có mảng waiting. 5 process k có mảng waiting sẽ lại như cũ có thể có process kbh được thực hiện. Nhờ waiting[] mà ta đảm bảo 5 process kia chắc chắn được thực hiện trước luôn như v. Nếu implement mọi process như v sẽ đảm bảo mọi process luôn luôn thực hiện lần lượt mà k sợ có process nào bên ngoài vào lấy mất slot.
+Cách dùng (i+1)%n để duyệt và lặp lại chứ k cần check if i == n thì i = 0 thủ công. 
+
+Mutex lock có inconvenience riêng.
+Semaphore chỉ qt 2 hàm wait và signal với biến S mặc định là 0. Signal là wait() kết thúc và cái nào gọi wait được thực hiện tiếp, cơ chế thật ra chỉ là signal thì S++ và wait thì while S <= 0; là xong
+Nếu chỉ lấy 2 giá trị 0 và 1 của S thì là binary semaphore, giống mutex lock. Counting semaphore thì khoảng của S lớn hơn là chỉ có 0 và 1 như trên, nó cho phép nhiều hơn 1 process/thread cùng enter critical section cùng lúc.
+
+VD: Exercise slide 38 dùng 2 binary semaphore => đảm bảo A trước F và F trước C
+P1: printA, signal(S1), printB, wait(S2), printC
+P2: printE, wait(S1), printF, signal(S2), printG
+=> Đây là 2 process nhưng lại dùng chung S1, S2 vì nó là biến semaphore là object thuộc về operating system và được dùng chung ở mọi process. Thực tế có 2 loại semaphore là semaphore trong 1 process và global semaphore giữa các process với nhau.
+
+VD: thao tác với database thì có 2 loại process là reader process và writer process. Ta sẽ chỉ cho phép 1 writer process được modify database tại 1 thời điểm và nhiều reader được access database at the same time(có giới hạn số lượng). Thì ta dùng binary semaphore xử lý writer process còn 1 counting semaphore cho reader process. Giả sử ban đầu counting semaphore khởi tạo max count là n thì khi đã có n reader process access database r thì k thể có thêm reader process nào khác access vào database nx trừ khi có reader process nào kết thúc. Vc writer process có thể dùng counting semamphore với n = 1 ok.
+
+Slide trang 55 phân tích Readers-Writers Problem:
+Trước khi write phải check rw_writer ok. Còn read có 2 critical section
+Trước khi read phải check vẫn read được với wait(mutex), read_count++ => tức là read_count++ k được phép có 1 reader khác cũng sửa đổi biến read_count sẽ thành sai nên cái wait(mutex) là để xử lý modify biến read_count, nếu đây là reader đầu tiên thì có thể đang có writer vào database và ta phải chờ nó xong(vì k cho phép vừa read, vừa write cùng lúc => quy tắc qtr), ngược lại k có write thì nó đi tiếp, viết xong thì signal mutex để cho reader khác có thể sửa read_count
+perform reading
+read xong thì làm tương tự để giảm read_count nhưng vừa nãy nếu là reader đầu tiên thì ta dừng cái writer process lại, bh nếu như k còn reader nào nx thì ta trả lại writer quyền modify. Ta làm như v sẽ bao quát được kiểu đang có reader này thì reader khác vào thì ta k thể cứ mỗi lần 1 reader mới thì phải chỉnh sửa mutex cho writer nx mà chỉ cần biết cứ có reader là k được write, hết reader thì write
+Ý là với cách dùng rw_mutex như thế thì write trước sẽ k thể read, read trước sẽ k thể write, cái nào vào trước thì làm trước. VD read trước mà có 100 reader ở hàng đợi vào từ từ thì éo write được luôn vì nó chỉ signal hết khi read_count về 0
+
+
+
+# File system: 
+Nói tới file là ta lưu trong secondary storage gồm hard-disk driver và nonvolatile mem.
+1) HHD: platter có thể xoay để read/write head trỏ tới đúng section. Các sector là đơn vị nhỏ nhất trên đĩa và k thể chia nhỏ hơn nên read/write head phải read one or more of whole sector.
+Latency là độ trễ là 1/(RPM/60) với RPM là rotation per minute tức số giây cần cho 1 rotation. 
+Seek time là thời gian tìm kiếm hay thời gian để cái read/write head move tới đúng cylinder. 
+2) NVM: Vc format trên disk như thế nào, số lượng sector hay bố cục là thuộc về phần cứng khi mua, lập trình viên k đổi được nó. Các bước format disk:
+-> disk là blank slate và chia thành từng sector với low-level format, mỗi sector có header, data, ECC cho read/write head trỏ tới
+-> disk is partitioned thành 1 nhóm các cylinder hay hiểu là sequence of track như trong hình. Tức là file thực tế là lưu trên từng partition của hard disk. 
+-> logical formatting hay tạo hệ thống file cụ thể. Trên mỗi partition có thông tin về: superblock, bootblock, free space, inode, root dir
+
+Boot block: record on sector. Trên mỗi partition của đĩa đều có 1 boot block nhưng chỉ có 1 cái có thông tin về OS, thông tin này dùng để boot(start) OS khi khởi động máy tính. Các partition nào khác cũng đều có bootblock nhưng vô dụng.
+Super block chứa các thông tin như size của partition, type of file system, number of block in a file system. Nó được load vào mem khi computer is booted or file system được tác động vào lần đầu tiên để OS lấy thông tin file
+Free space mgmt chứa thông tin sector nào free hay không.
+I-node chứa thông tin về structure của Unix OS. Mỗi file có 1 I-nodes, trong đó lưu map address of all block lưu file này
+
+File naming giới hạn kích thước là 255 ký tự trên window vì bản thân là 1 phần của thông tin file chiếm bộ nhớ nên phải bị giới hạn
+OS biết cách tìm ấy file trên hard disk. Khi ta chạy 1 file, thực chất OS mở 1 software khác để hỗ trợ mở cái file đó show cho người dùng. Loại software được xác định qua extension trong tên file.
+
+1 partition = set các blocks(sectors) trên ổ drive = có a file system trong nó
+
+Partition table chứa thông tin partition nào nằm vị trí nào. 
+
+window use \ and UNIX use / in path name
+
+block trong file system là unit of transfer
+
+LBA nó như index hay ID of block, xác định vụ trí của block of data trên HHD
+
+OS see physical mem như 1 sequence of block như 1 array [0,1,2,3,4,5,6] và nó có hàm để ánh xạ từ sector trên harddisk vào cái array này => OS chỉ thấy cái array này chứ k cần biết physical mem làm cái gì. Khi OS muốn store cái gì thì nó sẽ store trong array này dựa vào index => bản chất của block
+Mỗi sector được đánh index từ 0 -> number of sector on harddisk. Block chứa nhiều sectors
+Có hàm convert từ index number -> cylinder number -> head number -> sector number. 1 sector cũng store trong 1 track -> đều convert được từ index on the table. 
+=> Thông tin về block nào free, block nào k free cũng được store trên hard disk.
+1 block được lưu trong 1 partition trên hard disk, thông tin về block free như ID block free cũng được lưu ở 1 phần của partition, nằm trong blocks khác
+VD trên hình slide 31 là sequence block trên partition mà mỗi block contain block data free như block 42 đang free chẳng hạn, do là linked list nên last entry cái này nối đầu entry cái kia
+
+ID của block lưu kích thước tốn phụ thuộc vào số lượng block ta dùng hay phụ thuộc vào physical device. VD nó tốn 4 bytes để lưu ID của block thì tức cần 4 byte để xác định 1 block có free hay k
+Giả sử 1 sector là 1KB = 1024 bytes mà 1 block ID tốn 4 bytes thì có đến 1024/4=256 free block inside 1 block of sector on the disk -> có thể refer tới 256 free block trong 1 block
+=> Nếu harddisk là 1TB thì cần 4 triệu block như v để store các block free trong whole disk. 
+số lượng block = size of harddisk / size each block
+số lượng free block trong 1 sector = size of 1 sector / size of block ID
+
+Để detect block nào free, người ta dùng bitmap. 1 chuỗi 101010 thì thứ tự lần lượt là block 1,2,3 thì 1 là free, 0 là k free => Cách bitmap này tốn ít bộ nhớ hơn cách dùng diskblock linkedlist trước
+
+VD: sector of block la 1KB. Ta dùng block để tạo bitmap tìm block data free trên harddisk thì trên 1 block ta có thể reference tới bao nhiêu freeblock in bitmap => 1024*8 block 
+=> vì block có kích thước 1KB để tạo 1 cái bitmap thì 1KB = 1000bytes(decimal) = 1024bytes(binary) tạo bitmap từng bit với 1 bit là 1 block thì refer max được 1024*8 block là đúng r. Nhưng thực tế các block nối chỉ định free block này sẽ nối với block tiếp theo vì dùng linkedlist như hình nên mất 4 bytes để refer tới block tiếp theo nên trừ đi 32 nx. 
+
+First bit of bitmap refer to first block of partition nào đó. The first block trong partition đó là offset from zero on disk => có nhiều partition chứa nh block mà
+
+HardDisk: Parittion1[0,1,2], P2[3,4,5,6,7], P3[...] và bitmap cho P2 là 01011 => tức 3 và 5, 6 đang free => số bit bằng số lượng block trong partition. Cách 1 thì số block bằng số free block. Cách 2 thì số bitmap bằng tổng số lượng block.
+
+Consecutive allocation:
+Khi cần store 1 file, block là consecutive block. Nếu allocate được sector to file, ta có thể thực hiện bằng cách tìm 4 consecute block. Khi delete file, nó sẽ clear the whole in the partition. Gặp vấn đề về fragmentation. Do từng cục liền nhau rời rạc, nếu các phần kẽ hở k lấp đầy sẽ bị lãng phí
+Cả block free cũng chỉ store block đầu tiên trong free list
+
+Linked list allocation:
+Lưu k consecutive nhưng phải thêm 1 trường refer tới block tiếp theo của file nên tốn nhưng lại k gặp vấn đề về fragmentation và dùng đủ bộ nhớ. 
+Điểm bất tiện khác là đọc 1 block để lấy link đến block tiếp theo -> fetch block tiếp và đọc tiếp và cứ thế phải fetch từ hard disk và mainmem liên tục. Cách trước thì nó liền nhau nên fetch cả đống được luôn. 
+
+FAT là table stored in hard disk và khi làm vc với partition thì nó sẽ được store vào main mem, giúp search address của file nhanh hơn. Lấy address cũng như first block từ FAT. VD file A bắt đầu từ index 4 of FAT trỏ đến 7 -> ... => kiểu cho biết block tiếp theo là gì
+Điểm lợi là FAT is loaded trong main mem nên nhanh hơn
+
+FAT = File Allocation Table
+File name tốn 8 bytes trong directory entry tức tên file k được dài quá 8 bytes. Extension 3 bytes tức có 3 ký tự thôi(đang VD chứ kp là Window như v nhé). First block là vị trí block đầu tiên lưu file đó trong bộ nhớ. 
+Trong OS khi ta mở file trong thư mục thì ta dùng hash table để lấy nội dung file.
+
+MS-DOS dùng FAT, mỗi entries của table tương ứng 1 block và nội dung nó point tới next block
+
+Boot Block nằm ở đầu mỗi partition chứa thông tin về filesystem và booting OS. 
+Trong partition có 2 copy của FAT đề phòng 1 cái corrupt vẫn còn 1 cái khác. FAT table cũng chỉ là file. VD trước khi ta chạy 1 app trong 1 partition, ta phải copy FAT table vào mainmem và quá trình này có thể bị corrupt chẳng hạn.
+Hệ thống file có thể bd dạng cây và root của cây chính là root directory, là first block. Trong FAT12, root directory có 14 sectors, mỗi sector có 512 bytes, mỗi entry có 32 bytes long. length của directory khác root phụ thuộc vào số children.
+Datablock để allocate block to file or directory.
+
+FAT12 tức cần 12 bit để index mọi block trong FAT table.
+FAT 12 dùng trong floppy disk, FAT 16 32 dùng trong larger hard disk
+VD: block size là 4KB mà FAT 12 dùng đánh max được 2*12 block thì 1 partition có 1 block size thì có 4*2^12 KB = 16MB. Mỗi partition lưu được 16MB data. Đương nhiên là để dùng FAT 12 với larger disk thì cần tăng kích thước block size là lượng data block có thể lưu r. Nhưng FAT12 max là 16MB, FAT16 max 2GB, FAT32 là 2TB 1 partition
+
+Càng phát triển, capacity của harddisk càng tăng nhưng file system thì vẫn thế nên để dùng FAT12 cho các drive lớn, họ tăng size của mỗi block, mỗi sector lên thành 1kB, 2KB, 4KB. Ta có thể index max 2^12=2096 sector or block nên tăng kích thước của block là 1 cách để dùng FAT12 cho các drive kích thước lớn. Cách khác là dùng all possible entries mà ta có với 12 bit tức 4096 sector or block là max mà 1 FAT12 có thể refer tới
+Trên window chỉ support 4 disk C D E F nên FAT12 có thể address disk max tới 64MB.
+Với FAT 12, có 2^12 = 4096 entries có thể có trong table. Mỗi entries của table point đến 1 block có 4KB. Nên amount of mem is addressed bởi FAT table là 4096 *4KB ~ 16MB
+VD: FAT table: [0-4,...,...,...,4-...,...,4095-...] có 4096 entries và mỗi entries có number trỏ đến next block store nd của file. File đó là F1 [Block1-Block4-...] mỗi block 4KB tức file có 12KB thì nd sẽ được lưu bởi 3 blocks. Ta xem được block nào store file này bằng cách nhìn vào entries of directory for file ở mục First Block Number bên cạnh các trường như Date, Time,... sau khi biết First Block thì nhìn vào FAT table sẽ ra các block tiếp theo
+
+FAT16 cũng chỉ là FAT table bigger có 2^16=65536 entries mà thôi, store more file trên harddisk.
+FAT table phải được store in main mem trước khi nó execute.
+
+VD: FAT-12 với 1 block size là 4KB thì 1 partition có tới 16MB và 4 partition của window max là 64MB.
+Có thể xem loại File system trong máy, thg window bh thg là NTFS.
+
+FAT32 thg dùng trong các thiết bị USB.
+
+Bản chất cũng chỉ là mapping từ entries của table sang block lưu file
+
+Inode là cơ chế nó khá giống FAT table, được dùng trong linux, window dùng cái tương tự inode nhưng gọi là NTFS
+
+
+##### breakmind #####
+
+FAT, block, sector, entry, directory, partition, file
+
+Disk là đĩa cứng là thứ chứa tất cả mọi thứ khác về mặt vật lý
+Ở phía người dùng thì ổ đĩa trên máy ta thấy là drive, nó rất lớn và gồm nhiều partition. Mỗi drive đó có 1 FAT (or NTFS nếu dùng NTFS). Đó là ở phía người dùng, thực tế mỗi directory có 1 FAT table nếu nó dùng method allocation là FAT table.
+Directory nằm trong ổ đĩa theo cấu trúc phân cấp cây thư mục, directory có file. Thực tế trong phần cứng k có file mà nó lưu dạng block, file là 1 set các blocks.
+Disk có nhiều partition, partition gồm nhiều block, block gồm nhiều sectors.
+Block này là data block là nơi từng đơn vị data lưu vào.
+Bản chất là ánh xạ từ phần cứng (sector) sang phần mềm (block) để các ứng dụng hay gì đều thao tác với phần mềm
+
+Về kích thước: 
+1) Xác định block free bằng trường free space management trong partition:
+-> Dùng pp linked list block lưu address(ID) của block free
+số lượng block = size of harddisk / size each block
+số lượng free block trong 1 sector = size of 1 sector / size of block IDs(làm tròn dạng byte là power of 2 dạng bit) - 1 vì 1 block dôi ra để pointer to next block
+-> Dùng bitmap tính theo số bit:
+VD: 1 sector of block là 1KB(đang xét 1 sector ~ 1 block) thì nó xđ được max 1024*8 - 32 cho block free vì nó cần 32 bits = 4 bytes để pointer vào next block
+=> 1 hàng là 1 sector
+
+2) Khi allocate consecutive physical block cho file
+VD: Block 1KB thì file 50KB được gán vào 50 block
+
+
+3) Khi dùng FAT để allocate block to file trong window:
+1 partition chứa 1 FAT table và nhiều block. Nó dùng FAT để đánh dấu đến block nào nó muốn sử dụng. Tức là có thể có vô số block với kích thước size mong muốn trên disk nhưng thực tế chỉ dùng được lượng mà FAT có thể trỏ tới:
+VD: FAT 12 dùng 12 bit để xác định block thì nó xác định được max 2^12 block. Nếu ta chia mỗi block 4KB thì parttion đó có size là 4*2^12=16MB. Giả sử hđh dùng 4 partition C D E F là max với FAT 12 thì hđh đó lưu max lượng data là 16*4=64MB
+
+Tương tự với các FAT khác: FAT12 max là 16MB, FAT16 max 2GB, FAT32 là 2TB 1 partition
+
+4) Dùng FAT để allocate, tính toán liên quan đến entry:
+VD FAT 12 dùng 12 bit để allocate max tới 4096 block, block chính là entries trong FAT table. Nó sẽ có dạng - FATTABLE: [block1, block2, block3,..] => block1 có pointer đến block2, block2 pointer đến block3. 
+Còn trong directory đó có bnh file thì mỗi file chiếm 1 lượng block. File cũng có dạng: [Block1-Block4-Block5] là TH file chiếm 3 block.
+
+
+Phân biệt 4 loại cấu trúc đã học:
+1) Cấu trúc partition: là cấu trúc cơ bản nhất có bootblock, superblock, free space management, inodes, root dir, other file and directory
+2) Cấu trúc của block: Có rất nhiều loại block nhưng hầu hết đều lưu cơ bản là content và pointer to next block
+3) Cấu trúc của FAT của 1 disk: Boot block, FATx1, FATx2, data block chứa data thực sự là cái table đó
+4) Cấu trúc của file/directory:
+Metadata như name, extension, attributes, time, date, size, reserved
+First block number là trường quan trọng chứa block đầu tiên chứa data -> muốn lấy data của file thì lấy từ first block number rồi nhìn vào FAT table ra vị trí block tiếp theo và cứ thế lấy từng block ra hết content của file
+
+##### breakmind #####
+
+
+Trong windows NTFS thì entries rất đơn giản là: [Filename][reference number to first block]. Block cũng chỉ là các sector trong hình. 
+Master File Table cũng giống FAT table, nó k được load vào mainmem vì kích thước lớn. Nó là array index từ 0, mỗi entries của array xđ 1 file, map file vào block. 1 entry là 1KB. Đầu master file sẽ lưu boot block, bootblock là address của block đầu tiên store trong MFT.
+Mỗi entries lưu các trường thông tin bao gồm cả thông tin phục vụ mapping. Window dùng consecutive block lưu file.
+
+Mỗi NTFS file chứa 1 tập hợp attribute từng entry và mỗi cái được lưu dạng stream of bytes. 1 file có thể có nhiều stream chứa thông tin như file name, stream name.
+
+
+Linux dùng i-nodes.
+Partition trong Linux khác window là nó chia thành các sub group. Trong 1 subgroup ta có data của 1 cylinder trên harddisk, tốc độ lấy nhanh hơn khi move head đến 1 cylinder. 
+
+inode lưu 12 address trên disk của 12 block lưu data của file đó. Nếu file data cần lớn hơn 12 block thì nó bắt đầu dùng indirect block để trỏ tiếp 
+
+block bitmap lưu thông tin xem block nào free(bằng cách đánh 1/0 đã biết)
+i-node bitmap chỉ định sequence of block storing info of file(k store file content). Khi file được tạo ra, nó take 1 i-node và phải nhìn vào i-node bitmap để tìm i-node free. 
+Trong i-node có pointer to block store file. 
+Tương tự window, trong mỗi entries của linux chứa tên file và i-node number.
+
+Mỗi process có 1 table lưu file descriptor. Khi open file sẽ gọi system call trả ra 1 sô chỉ định file descriptor. Mỗi file descriptor trong file descriptor table trỏ đến 1 opened file trong opened file table. Khi 1 file được open cũng sẽ có 1 i-node cho file đó trong i-node table. Mỗi entry trong opened file table lại point đến 1 entry của i-node table, entry này point tới data block lưu content của file.
+file descriptor table này nằm ở main mem, kernel space.
+
+Process open file -> go to root directory -> tìm entry đúng -> lấy file descriptor trỏ -> [file descriptor table] trỏ -> [opened file table] trỏ -> [i node table] -> address on disk -> tìm block of lưu data đúng -> load to main mem -> trả lại file descriptor
+
+Mở file trong linux -> go to root directory -> tìm entry usr -> lấy i-node number -> fetch i-node từ hard disk lên main mem dựa vào i-node number -> tìm block of directory usr -> load directory usr lên main mem -> read usr và tìm entries me chẳng hạn -> i-node point to block thì ta lấy block tương ứng với me -> ... -> return file descriptor
+
+Khi kết nối các thiết bị mà có partition, OS phải mount into file system trên window or linux. 
+Window có thể có các file system rời nhau k trong single tree, linux chỉ có 1 tree và tất cả cùng mount vào 1 tree đó
+
+Có 1 small memory trên mainboard của máy tính gọi là BIOS, nó chứa code cho phép processor đọc phần boot sector là sector zero trên partition, nó xác định partition nào và chạy phần boot block.
+
+
+
+# Other
+- The most significant bit là tập bit phía bên trái
+- Given a constant address space on 32 bits, the size of the page table decreases with larger pages vì size of page table chỉ xét số lượng entry thôi
+- Thông thường file store trên disk nhưng nếu kích thước file nhỏ hơn 1 block thì nó có thể store trực tiếp trong inode. - Điều này giúp tiết kiệm 1 lần access vào disk vì chỉ cần inode được load vào main mem. Nếu k sẽ phải load cả inode và block trên disk chứa file vào main mem.
+- 2 process dùng page table riêng nhưng share chung frame nếu cần access chung và read only
+- One big inconvenient of keeping record of free blocks using a linked list of disk blocks is that if one link is destroyed then the whole record of the free blocks is lost
+- Dùng two-level page table và no TLB. Cần access vào main memory 3 lần for each data/instruction read or written: 1 lần cho page, 2 lần cho data
+- VAS xđ bằng n bit thì size of process k thể lớn hơn 2^n
+- Processes đang chạy trong a critical section có thể bị de-scheduled -> bởi vì de-scheduled có nhiều lý do, vc chạy trong critical section chỉ đảm bảo chỉ có 1 thread chạy nó vào 1 ktg chứ đang chạy gặp lỗi vẫn descheduled bth
+- swap space là đang nói tới là trên partition of HDD or SSD
+- Các threads trong là 1 phần của cùng 1 process có thể access dùng 1 TLB entry
+- Khi chuyển từ bit sang byte, ta sẽ phải round to byte
+- Địa chỉ của frame hay page trong page table là base + index*(size of an entry) => chứ nó k cộng dồn vào địa chỉ address bên trong đâu. Cái page và frame nó đều nằm trên mem và có địa chỉ riêng liên tiếp nhau. 
+VD: The Page-Table Base Register (PTBR) points to the base address of the process’s page table in the kernel. Assume main memory is 2^32, logical addresses are on 32 bits, page size is 2^12, the program execution makes a reference to logical address 8293. Let x be the base address of the page table, what is the address in the kernel of the entry of the page table referenced by logical address 8293? => x + 8 nhưng ta lại ra là x + 6 vì đầu tiên page 0 có địa chỉ là x. 8293 nằm trong page 2 thì giá trị là x + 2*(size of entry). Mà 1 entry cần đánh hết frame thì trong TH mặc định, 1 page 1 address thì cần tới 20 bit để đánh index mọi frame hay kích thước của 1 entry là round to byte là 3 bytes nên ta mới ra là x + 6. Còn tại sao ô thầy ra x + 8 ta cũng chưa hiểu được. Nếu entry nó lưu cả địa chỉ frame là 32 bit = 4 byte thì x+8 ok ngay, chả biết ô già muốn lưu như nào nx
+- Page fault thông báo ra 1 interrupt nhưng k gọi là 1 error
+- The process of dividing a disk into sectors that the disk controller can read and write, before a disk can store data is low-level formatting
+- Số lượng head bằng số lượng track trong 1 cylinder
+- In pure demand paging, a process is started with no pages loaded into main memory. What is an upper bound on the amount of memory in total (main + swap space on disk) a process of 2^k bytes can use at any time (assuming 2k modulo page size = 0) => ez 2^(k+1) bytes vì main và swap space có kích thước là 2^k cộng lại 
+- page-reference string là đang nói tới chuỗi page number access.
+VD: Assume that you have a page-reference string for a process with k frames (initially all empty). The page-reference string has length n in which m distinct page numbers occur in it. Given any page-replacement algorithms, what is a lower bound on the number of page faults? => tự nhiên nhớ đúng cái bài synchronization phát dễ hẳn luôn. k là lượng frame thì chắc chắn kp, n là độ dài reference string thì k thể nào lấy page nào cũng là page fault được nên kp, m distince page thì đúng vì mỗi 1 page mới xuất hiện thì ít nhất là nó phải page fault 1 lần tức là min phải là m
+

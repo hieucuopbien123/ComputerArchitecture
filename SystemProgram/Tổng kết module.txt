@@ -1,0 +1,346 @@
+MS-DOS COM chỉ dùng offset part => near address
+MS-DOS EXE dùng cả segment part và offset part thành seg:offset => far address => bộ nhớ lớn hơn. Dù slide nó k nói nhưng header nó lưu nhiều trường đó
+Khi load program từ disk tại address xxxx:yyyy tính từ 0000:0000 sang main memory tính từ seg(giá trị bất kỳ):0000 thì address của chương trình phải đổi thành kiểu call (xxxx:seg):yyyy => phải sửa address bằng cách add thêm lượng seg vào address mới hoạt động đúng trên memory
+                                     |
+                                   1 cục mới
+Disk [0000:0000 -> xxxx:yyyy]
+Memory [.....[seg:0000 -> seg:FFFF]......]
+=> Cần có 1 trường thông tin giúp loader biết cần phải load như thế nào. Đó là 1 table keep location of segment part khi thực hiện lệnh call, relocation table. Khi load program vào main memory thì check relocation table để chỉnh sửa vị trí của segment part address bằng cách cộng vào 1 lượng base address trong memory (ở đây là seg(giá trị bất kỳ):0000)
+Cơ chế đơn giản là chỉ cần add base segment của main memory vào segment part của program cần exec
+: là phép << 4 + đó
+
+
+
+Bài 1:
+System software là gì?
+Compilation cơ bản
+Executable code là kết quả của 2 qtr compile và linking
+Source code -> Compiler -> [token -> senmatic -> parser tree -> intermediate code -> tối ưu -> assembly] -> assembler convert assembly thành object file -> Object program là mã máy -> Linker thêm các libraries -> executable -> loader -> executable (main memory) -> machine (nhận input từ ng dùng nx) -> chương trình cần gọi vào hệ thống [usermode -> kernel mode] -> system call interrupt -> OS[process, file, memory, network, device driver -> hardware] -> trả lại kết quả cho machine -> output
+OS quản lý phần cứng như CPU và cung ra service cho các phần mềm khác như systemcall
+
+Cơ chế systemcall interface hoạt động với interrupt:
+A system call is a programmatic way in which a computer program requests a service from the kernel of the operating system. This service could be anything from creating a file, reading from a file, writing to a file, managing hardware devices, etc.
+The system call interface is a bridge between the user-space applications and the kernel. It provides a well-defined, stable set of functions that an application can use to request services from the kernel.
+Từng bước:
+1. An application makes a system call, which is a specific function call provided by the system call interface. This function call often takes the form of a trap to a specific location in the interrupt vector.
+2. This trap triggers a software interrupt, which is a type of interrupt that is triggered by software (in this case, the system call) rather than by a hardware event.
+3. The interrupt causes the processor to switch from user mode to kernel mode, so that the kernel can safely perform the requested service.
+4. The kernel performs the requested service, then returns control to the application by switching back to user mode.
+This process allows applications to request services from the kernel in a safe and controlled manner, without having to understand the details of how the kernel implements these services.
+
+Ví dụ về kích hoạt device drivers:
+Program A request device function bằng cách gọi vào device driver
+Device Driver extract command từ request và gửi tới thiết bị thực
+Thiết bị thực xử lý và gửi lại data cho driver
+Driver invoke routine để báo cho Program A biết là data đã available
+
+Trong linux, DD là 1 module gắn với kernel, có 3 loại là character, block, network
+
+Archiver là 1 chương trình máy tính gom nhiều file lại thành 1 archive file để truyền or lưu cho dễ. Thường dùng cho sub program trong các thư viện. Commonly used archiving formats include ZIP, RAR, TAR, and 7z,
+
+
+
+Bài 2:
+Các cái slide processor nói về mọi loại processor ấy. Sau đó là register
+
+Giải thích EFLAGS register:
+EFLAGS : this register contains a status flag.
+8 80-bit registers of float ST(0)-ST(7)
+8 64-bit registers for MMX
+8 128-bit XMM registers (Used for SSE)
+
+These are various types of registers used in x86 architecture CPUs:
+1. EFLAGS: This is a 32-bit register used as a collection of bits representing Boolean values to store the results of operations and the state of the processor. It includes status flags, control flags, and system flags. Status flags reflect the result of CPU operations, for example, the Zero Flag (ZF) is set to 1 when an operation results in a zero value.
+2. 80-bit registers of float ST(0)-ST(7): These are part of the x87 FPU (Floating-Point Unit) register stack. They are used to perform high-precision mathematical operations (like floating-point arithmetic). ST(0) to ST(7) are eight 80-bit registers used as a stack.
+3. 64-bit registers for MMX: MMX (MultiMedia eXtensions) technology introduced eight 64-bit registers named MM0 to MM7. These registers are aliases for the existing x87 FPU stack registers. MMX was designed for performing SIMD (Single Instruction, Multiple Data) operations for multimedia, such as video.
+4. 128-bit XMM registers: These are used for SSE (Streaming SIMD Extensions), which is another SIMD instruction set extension to the x86 architecture, introduced by Intel. The XMM registers are used for storing multiple integer and floating-point values and are used in multimedia, scientific, and 3D applications that require high-performance computations. There are 8 XMM registers (XMM0 to XMM7) in the original SSE implementation, and this was extended to 16 registers (XMM0 to XMM15) in later versions of the architecture.
+
+Instruction cấu thành từ: Opcode - Operand1 - Operand2
+Trong đó chưa prefix, opcode, mode, offset, immediate
+Instruction cycle
+Instruction pipeline là cái kiểu VD có 2 pipeline thì thực hiện đồng thời được 2 instruction cùng lúc ở 1 mốc tg
+
+Các câu lệnh assembly cơ bản
+EDX là Extended data Register dược dùng lưu trữ bit cao trong kết quả phép nhân hoặc chia
+EAX là Extended accumulator register dùng lưu bit thấp trong kết quả phép nhân hoặc chia, là kết quả thực sự của phép tính. Lưu kết quả trả về của function luôn
+IDIV tương tự DIV nhưng là có dấu
+NEG là nghịch đảo rồi thêm + 1 (bù 2), NOT là chỉ nghịch đảo
+
+Lệnh CMP trong assembly thực hiện một phép trừ giữa hai toán hạng nhưng không lưu kết quả, chỉ cập nhật các cờ (flags). Nếu hai toán hạng bằng nhau, lệnh CMP sẽ set các cờ sau:
+- Zero Flag (ZF): Được set (1) nếu kết quả là 0, tức là hai toán hạng bằng nhau.
+- Carry Flag (CF): Được set (1) nếu có một borrow từ bit cao nhất trong quá trình trừ. Trong trường hợp này, nó sẽ không được set vì hai toán hạng bằng nhau.
+- Overflow Flag (OF): Được set (1) nếu có một overflow từ bit cao nhất. Trong trường hợp này, nó cũng sẽ không được set vì không có overflow khi hai toán hạng bằng nhau.
+- Sign Flag (SF): Được set (1) nếu bit cao nhất (bit dấu) của kết quả là 1, tức là kết quả là một số âm. Trong trường hợp này, nó sẽ không được set vì kết quả là 0.
+
+TEST instruction trong assembly x86 thực hiện AND và set giá trị cho 3 cờ sau:
+1. Zero Flag (ZF): The Zero Flag is set if the result of the AND operation is zero. This indicates that all the corresponding bits in the operands were clear (0).
+2. Sign Flag (SF): The Sign Flag is set based on the most significant bit (MSB) of the result. If the MSB is 1, indicating a negative result, the Sign Flag is set.
+3. Parity Flag (PF): The Parity Flag is set if the result has an even number of set (1) bits. It indicates the parity (evenness or oddness) of the result.
+
+The JMP instruction is an unconditional jump instruction that transfers program control to the specified label unconditionally. It does not depend on any specific flag condition.
+The JE (Jump if Equal) instruction jumps to the specified label if the Zero Flag (ZF) is set, indicating that the previous comparison or operation resulted in an equality condition.
+The JL (Jump if Less) instruction jumps to the specified label if the Sign Flag (SF) is set, indicating that the previous comparison or operation resulted in a negative (less than) condition.
+The JG (Jump if Greater) instruction jumps to the specified label if the Zero Flag (ZF) is clear and the Sign Flag (SF) is clear, indicating that the previous comparison or operation resulted in a positive (greater than) condition.
+The JNE (Jump if Not Equal) instruction jumps to the specified label if the Zero Flag (ZF) is clear, indicating that the previous comparison or operation resulted in a non-equality condition.
+The JGE (Jump if Greater or Equal) instruction jumps to the specified label if the Sign Flag (SF) is clear, indicating that the previous comparison or operation resulted in a non-negative (greater than or equal) condition.
+The JLE (Jump if Less or Equal) instruction jumps to the specified label if either the Zero Flag (ZF) is set or the Sign Flag (SF) is set, indicating that the previous comparison or operation resulted in a non-positive (less than or equal) condition.
+=> Do đó nó thường dùng sau TEST và CMP để chạy theo kết quả của 2 instruction này
+
+1. PUSHAD (Push All Registers): Lệnh PUSHAD được sử dụng để lưu trữ giá trị của tất cả các thanh ghi thông qua việc đẩy chúng vào ngăn xếp (stack). Các thanh ghi được lưu trữ theo thứ tự sau: EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI. Lệnh PUSHAD giúp lưu trữ trạng thái của các thanh ghi để sau đó có thể khôi phục chúng sau khi hoàn thành một hoạt động quan trọng.
+2. POPAD (Pop All Registers): Lệnh POPAD được sử dụng để khôi phục giá trị của tất cả các thanh ghi từ ngăn xếp (stack) vào các thanh ghi tương ứng. Các thanh ghi được khôi phục theo thứ tự ngược với lệnh PUSHAD: EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX. Lệnh POPAD giúp khôi phục trạng thái ban đầu của các thanh ghi sau khi đã lưu trữ chúng bằng lệnh PUSHAD.
+
+Lệnh CALL <memory/register/global offset> sẽ chuyển control tới address nào để thực hiện tiếp (1 label or điểm start của 1 function). Và nó push address của instruction tiếp theo dưới lệnh call vào stack. Function được gọi khi thực hiện xong chỉ cần dùng RET instruction để lấy address dưới lệnh call trong stack ra và thực hiện tiếp từ đó. 
+
+ENTER <size of frame> <mức độ lồng>
+Lệnh ENTER trong ngôn ngữ lập trình Assembly được sử dụng để chuẩn bị một khung ngăn xếp (stack frame) cho một thủ tục hoặc hàm. Nó cấp phát không gian trên ngăn xếp cho các biến cục bộ và lưu trữ các giá trị con trỏ cơ sở (base pointer) và con trỏ ngăn xếp (stack pointer) trước đó.
+Lệnh ENTER có hai tham số:
+1. Kích thước khung (size of frame): Tham số này xác định tổng kích thước của khung ngăn xếp, bao gồm không gian cho các biến cục bộ và dữ liệu khác. Thông thường, nó được chỉ định dưới dạng một giá trị số nguyên dương.
+2. Mức độ lồng (nesting level): Tham số này xác định mức độ lồng của thủ tục hoặc hàm. Thông thường, nó được chỉ định dưới dạng một giá trị số nguyên không âm.
+Lệnh ENTER thực hiện các bước sau:
+1. Nó đẩy con trỏ cơ sở (base pointer) hiện tại vào ngăn xếp.
+2. Nó sao chép giá trị con trỏ ngăn xếp (stack pointer) hiện tại vào con trỏ cơ sở (base pointer), biến nó thành con trỏ cơ sở mới cho khung ngăn xếp hiện tại.
+3. Tăng kích thước ESP bằng size of frame và sử dụng cho hàm.
+4. Nó khởi tạo các biến cục bộ và thực hiện bất kỳ thiết lập cần thiết cho thủ tục hoặc hàm dùng ngăn xếp
+Lệnh ENTER thường được sử dụng kết hợp với lệnh LEAVE, được sử dụng để dọn dẹp khung ngăn xếp và khôi phục lại các giá trị con trỏ cơ sở và con trỏ ngăn xếp trước đó.
+
+Memory Management mode
+Real address mode: segment << 4 + offset 16 bit mỗi segment là 64KB, address conversion có thể tăng lên 1MB
+Flat memory mode: k chia thành segment, 32 bit
+
+GNU assembler
+1 assembly program trước khi được assembler xử lý thì nó ở dạng intermediate code, nó chứa mọi thông tin về chương trình. Gồm instruction và pseudo-instruction: Instruction là lệnh của CPU thực hiện, pseudo-instruction là thứ hỗ trợ assembler sinh object code
+
+Addressing mode:
+1 => là địa chỉ 0x00000001 ở 8 bits
+$1 => là giá trị số 1
+
+Size of processing data
+Label
+
+Data definition:
+Chú ý .ascii là string bth, .asciiz là string phải kết thúc bằng null là \0 => ngược lại
+
+Memory segmentation: hiểu về .text, .data và stack
+
+Memory alignment: vì 1 address đại diện cho 8 bit
+
+Subroutine:
+EBP là một thanh ghi (register) trong kiến trúc x86. Nó là viết tắt của "Extended Base Pointer" và còn được gọi là "EBP register" hoặc "Base Pointer register".
+EBP được sử dụng trong quá trình thiết lập và quản lý khung ngăn xếp (stack frame) trong các thủ tục và hàm. Nó lưu trữ địa chỉ cơ sở (base address) của khung ngăn xếp hiện tại, cho phép truy cập dễ dàng đến các biến cục bộ và tham số của thủ tục hoặc hàm.
+Khi một thủ tục hoặc hàm được gọi, giá trị của EBP được sao chép vào một thanh ghi khác (thường là ESP - Extended Stack Pointer) để tạo ra một con trỏ cơ sở mới cho khung ngăn xếp của thủ tục hoặc hàm đó. Sau đó, EBP được cập nhật để trỏ đến khung ngăn xếp mới.
+EBP cũng thường được sử dụng để truy cập các tham số của thủ tục hoặc hàm thông qua các địa chỉ tương đối (offset) từ EBP. Nó cung cấp một cách tiếp cận tương đối và ổn định đến các biến cục bộ và tham số, đồng thời giúp đơn giản hóa việc quản lý khung ngăn xếp trong quá trình thực thi chương trình.
+
+Giải thích:
+add:
+pushl %ebp
+movl %esp, %ebp
+subl $4, %esp
+movl 12(%ebp), %eax
+addl 8(%ebp), %eax
+movl %eax, -4(%ebp)
+movl -4(%ebp), %eax
+leave
+ret
+
+Đây là một đoạn mã Assembly x86 cho một hàm cộng hai số. Dưới đây là giải thích từng dòng:
+1. pushl %ebp: Lưu giá trị hiện tại của thanh ghi base pointer (%ebp) vào ngăn xếp. Điều này giúp lưu trữ trạng thái hiện tại của ngăn xếp trước khi thực hiện hàm.
+2. movl %esp, %ebp: Đặt giá trị của thanh ghi stack pointer (%esp) vào thanh ghi base pointer (%ebp). Điều này thiết lập một khung ngăn xếp mới cho hàm.
+3. subl $4, %esp: Giảm giá trị của thanh ghi stack pointer (%esp) đi 4, tức cấp phát 4 byte trên ngăn xếp cho biến cục bộ.
+
+4. movl 12(%ebp), %eax: Di chuyển giá trị từ địa chỉ mà %ebp trỏ đến cộng thêm 12 (tham số thứ hai của hàm) vào thanh ghi %eax.
+Trong một hàm Assembly x86, các tham số của hàm thường được truyền qua ngăn xếp. Khi một hàm được gọi, địa chỉ trở về (return address) và giá trị cũ của thanh ghi base pointer (%ebp) được đẩy vào ngăn xếp trước tiên, sau đó là các tham số của hàm.
+Khi hàm bắt đầu thực thi, %ebp được thiết lập để trỏ đến base của khung ngăn xếp hiện tại. Do đó, giá trị tại %ebp là giá trị cũ của %ebp từ khung ngăn xếp trước đó, và giá trị tại 4(%ebp) là địa chỉ trở về. Các tham số của hàm bắt đầu từ 8(%ebp), 12(%ebp), và tiếp tục tăng lên.
+Trong trường hợp của hàm này, movl 12(%ebp), %eax di chuyển tham số thứ hai của hàm (được lưu trữ tại 12(%ebp)) vào thanh ghi %eax. Điều này giải thích tại sao 12(%ebp) được sử dụng để truy cập tham số thứ hai của hàm.
+
+5. addl 8(%ebp), %eax: Cộng giá trị từ địa chỉ mà %ebp trỏ đến cộng thêm 8 (tham số đầu tiên của hàm) vào thanh ghi %eax.
+6. movl %eax, -4(%ebp): Di chuyển giá trị từ thanh ghi %eax (kết quả của phép cộng) vào vị trí mà %ebp trỏ đến trừ đi 4 (biến cục bộ). Cứ 1 giá trị lưu bằng 4 ô
+7. movl -4(%ebp), %eax: Di chuyển giá trị từ vị trí mà %ebp trỏ đến trừ đi 4 (biến cục bộ) vào thanh ghi %eax.
+8. leave: Đặt giá trị của %ebp vào %esp và pop giá trị từ ngăn xếp vào %ebp. Điều này dọn dẹp khung ngăn xếp và khôi phục trạng thái ngăn xếp trước khi hàm được gọi (Do nó clean lại esp và ebp về ban đâu nên ta mới cần lưu vào eax)
+9. ret: Trả về từ hàm, di chuyển giá trị từ đỉnh ngăn xếp vào %eip, làm thay đổi điểm tiếp theo mà CPU sẽ thực thi.
+Tóm lại, đây là một hàm cộng hai số, nhận hai tham số từ ngăn xếp, cộng chúng lại và trả về kết quả.y
+
+enter / leave
+call / ret
+
+Lệnh CALL <memory/register/global offset> push address của ins dưới lệnh call vào stack và thực hiện tiếp từ label (nhét label vào eip) và giảm cả ESP đi. Lệnh RET lấy đỉnh ngăn xếp vào eip và tăng ESP lên chỗ cũ
+Lệnh ENTER đẩy EBP vào stack giảm ESP, move từ ESP vào EBP, tăng kích thước esp lên bằng size of frame (VD ở trên ta làm thủ công đoạn này). Lệnh LEAVE đặt EBP vào ESP, và pop giá trị từ stack vào EBP.
+=> Vẽ ra thấy ngay
+
+Stack and stack frame:
+Stack lưu temporary data, LIFO, lưu ở high address area
+%esp luôn gắn với top of stack, hình trong slide
+Stack frame hay còn gọi là activation record là phần stack mà dùng để thực hiện 1 subrouting nào đó. Bản chất là %ebp lưu address gốc của caller. Trong trường hợp subroutine lồng nhau, thông tin %ebp sẽ lưu vào stack và %ebp tiếp tục lưu caller của subroutine mới nhất đang thực hiện.
+
+Stack frame lưu giống như ví dụ mẫu bên trên. VD stack bắt đầu đang lưu data của stackframeA -> tham số truyền vào hàm của subroutine B, return address là location ngay sau lệnh call, tiếp theo là ebp. 
+Việc lưu ebp này là sao? ebp nên nhớ là luôn phải lưu base address của 1 stackframe. VD ta đang hoạt động ở stackframeA thì ebp phải lưu base address của stackframeA. Khi ta chuyển sang stackframeB thì ebp phải lưu base của stackframeB. Xét Th bên trên thì ebp đang lưu base address của stackframe của caller trước đó thì ta lưu vào stack.
+Ở đây ta chủ động lưu tham số của stackframeB ngay từ stackframeA ở cuối để ref tới nó mà lấy cho dễ như VD trước thôi. Tức data truyền vào stackframeB cứ coi là xử lý ở stackframeA
+Sau đó ta gán ebp lưu base address của stackframeB (k lưu vào stack)
+Tiếp theo stack lưu tiếp biến cục bộ của stackframeB như bth sau cái ebp cũ, và cả giá trị trả về
+
+enter và leave là lệnh viết tắt như trong slide
+VD lệnh leave tương đương với:
+movl %ebp, %esp
+popl %ebp
+
+Tức dịch esp về lại base address của stackframeB. Nó k cần gán lại giá trị mà chỉ cần dịch về thôi
+popl %ebp => pop giá trị từ stack ra và lưu vào ebp. Lúc này ebp quay lại base address của caller cũ, esp quay về thời điểm sau khi lưu tham số của stackframeB (tức điểm cuối của stackframeA vì stackframeA lo cả vc set tham số cho stackframeB). Điều này hoàn toàn bth khi caller phải execute việc setup tham số cho callee trước khi gọi callee
+Sau đó có thể gọi ret để execute tiếp từ location lưu ở top của stack
+
+VD trong slide rất hay từ slide 55
+
+Function calling convention cũng chỉ là tập hợp quy tắc xác định cách mà các tham số được truyền vào một hàm, cách mà hàm trả về một giá trị, và cách mà trạng thái của ngăn xếp và các thanh ghi được quản lý trước và sau khi gọi hàm. Các quy tắc này có thể khác nhau tùy thuộc vào ngôn ngữ lập trình, kiến trúc hệ thống, và hệ điều hành. Có 4 kiểu trong slide
+
+Các thanh ghi rảnh: 
+eax ebx ecx edx
+Nếu 16 bit thì dùng: ah al bh bl ch cl dh dl
+
+
+
+Bài 3: 
+Có 3 loại object file: có thể load và execute được luôn; có thể link và vẫn chưa symbol (chưa hoàn toàn là mã máy); dạng thư viện có thể load vào ct khác.
+
+Object file chứa những gì? (slide)
+Nó chứa cả relocation info vì nhiều file khi linker link các object file khác kèm vào thì address gốc sử dụng trong Ct bị thay đổi, do liên quan tới nhiều file khác gọi lẫn nhau nên address kp lúc nào cũng cố định
+Symbol trong 1 object file đại diện cho các tên mà compiler or linker cần biết để hoàn thành qtr biên dịch và liên kết. Nó đại diện cho biến, hằng số, hàm trong mã nguồn
+
+Memory management trong loại CPU sơ khai nhất - 8086:
+8086 processor dùng 16 bit register lưu address và chỉ dùng được max 64KB memory, đây là loại register sơ khai đầu tiên. Nếu dùng nhiều hơn thì phải kết hợp thêm với 16bit segment register: đó là các register được phân mảnh dùng cho program code, stack và data riêng biệt
+Qtr convert address từ logical sang physical ta đã biết là segment << 4 + offset dùng max 1MB memory vì segment là 16 bit và offset là 4 bit nữa để biểu diễn address => sai nhé vì offset cũng 16 bit
+- Instruction Pointer (IP): Instruction Pointer (còn được gọi là Program Counter) là một thanh ghi trong bộ xử lý lưu trữ địa chỉ của lệnh hiện tại đang được thực thi trong chương trình. IP chỉ định địa chỉ bộ nhớ của lệnh tiếp theo mà bộ xử lý sẽ thực thi. Khi một lệnh hoàn thành, IP sẽ được cập nhật để trỏ đến lệnh tiếp theo trong chương trình.
+- Stack Pointer (SP): Stack Pointer là một thanh ghi trong bộ xử lý lưu trữ địa chỉ đỉnh của ngăn xếp (stack), chứa data bth ấy. Ngăn xếp là một vùng bộ nhớ đặc biệt được sử dụng để lưu trữ dữ liệu tạm thời và thông tin quan trọng như địa chỉ trở về (return address) và các biến cục bộ trong hàm. SP chỉ định địa chỉ hiện tại của đỉnh ngăn xếp và thay đổi khi dữ liệu được đẩy (push) hoặc lấy (pop) từ ngăn xếp.
+Trong 8086 processor, chúng đều là 16 bit register. Bài 2 ta học về kiến trúc x86 I32A thì assembly dùng thanh ghi với hậu tố b w l tùy bit cụ thể, còn ở đây thì 8086 processor là 1 loại cụ thể chỉ hỗ trợ 16 bit register thôi. Dùng segment register mới dùng nhiều hơn 64KB. Trong i32A, ta học address lưu giảm dần, ở đây khác.
+Segment register có 3 loại: CS, SS, DS và ES, đi kèm với thanh ghi offset là IP, SP, DP và EP
+=> Slide có bài tập tính absolute address (physical) từ logical address: tính từ segment register cho code và IP, tính từ segment register cho stack và SP
+
+IP là offset cho CP, SP là offset cho CS, SS
+
+Có 4 loại object code => thật ra là thú tự từ cũ đến hiện đại
+1) MS-DOS COM
+Memory management slide khá rõ ràng, trong đó có PSP là 1 cái prefix chứa thông tin về memory được gán và trỏ tới caller's PSP
+Cách load object file MS-DOS COM
+
+16 bit address => 64KB memory limit khá nhỏ cho cả code và data
+
+2) MS-DOS EXE
+Object file trong MS-DOS EXE chứa các thành phần gì: chú ý header chứa relocation table size chứ table này k nằm trong header. file này rút cục là chứa 3 thành phần riêng biệt.
+Relocation table chứa thông tin về address mà k được xđ tại thời điểm compile. Nên nhớ compiler sinh code cho program từ address 0x0000 nhưng kp lúc nào cũng có address fix cứng. Vd câu lệnh jump sẽ được thay thế bởi real address khi compiler xử lý nhưng có nhiều lúc nó chỉ được xđ khi chương trình được nạp vào, xđ như nào bởi linker thì được hướng dẫn bởi relocation table.
+
+Cách nó được load vào hệ thống
+
+Các thành phần của header (slide)
+
+3) UNIX a.out
+program và data được tách ra chứ k còn chung 1 segment như loại trước
+Các tính chất của memory management trong unix
+Các thành phần trong file a.out: header, text, data, etc. 
+Trong đó phần etc chứa thông tin về relocation hỗ trợ cho quá trình linking.
+Trong đó có symbol table cũng là phục vụ cho relocation symbols. Chứa thông tin như offset của nó trong string table, type là local hay global
+Thông tin về relocation của text và data cũng là address offset của text/data segment, pointer tới symbol table.
+
+Cách file a.out được load và execute
+
+ZMAGIC và QMAGIC là hai định dạng object file khác trong hệ điều hành Unix. Dưới đây là giải thích về các thuộc tính của chúng:
+1. ZMAGIC: Định dạng ZMAGIC được thiết kế để hỗ trợ cơ chế phân trang (paging) trong hệ điều hành. Trong định dạng này, tệp thực thi được chia thành các trang có kích thước 4KB. Hệ điều hành có thể store/restore một hình ảnh bộ nhớ nguyên thô (raw memory image) vào đĩa cứng. Điều này cho phép hệ điều hành lưu trữ và khôi phục lại trạng thái của một quá trình hoặc một hệ thống tài nguyên thô.
+2. QMAGIC: Định dạng QMAGIC được thiết kế để loại bỏ sự trùng lặp trong tiêu đề và các đoạn mã (segments). Để tránh con trỏ NULL, hệ điều hành không ánh xạ trang 0. Điều này có nghĩa là không có dữ liệu hoặc mã nào được đặt tại địa chỉ 0 trong bộ nhớ. Điều này giúp tránh các lỗi truy cập không hợp lệ và tăng tính ổn định của hệ thống.
+Tóm lại, ZMAGIC và QMAGIC là hai định dạng object file được sử dụng trong hệ điều hành Unix, mỗi định dạng có các thuộc tính và mục đích sử dụng riêng.
+
+3) UNIX ELF (Executable and Linking Format)
+Là loại hiện đại nhất, hỗ trợ OOP, dynamic link, header chứa thông tin qtr như architecture, byte order, 32/64bit
+
+Các thành phần của ELF object file: ELF header, Program header, Section header
+Các thành phần của ELF header, section header, program header, Symbol table (nằm trong section header phần text)
+=> Riêng phần này quá nhiều trường, sao mà nhớ được
+
+
+
+B4: 
+Linker ngoài combine các object lại, nó còn plan memory cho output, gán địa chỉ cho mỗi segment và symbol, relocate variables
+
+-> Có 2 cơ chế plan memory basic:
+1) Nó chia memory thành các segment cho executable code (text) và data (initialzed là data, uninitialized là bbs). Mỗi segment đó được gán 1 base address k overlap. Các object trong 1 segment sẽ relative theo cái base address của segment đó
+VD: slide thì memory output chia thành 3 segments, mỗi cái có 1 base address là 0, 600, A00
+ 
+2) Linker sẽ tính size từng segment của input file và ghép các segment cùng vai trò lại thành 1 segment duy nhất, plan memory cho từng segment đó ở output file. 
+
+Giá trị base address chọn tùy CPU. 
+VD slide: input file có 3 module là 3 segment sau khi nối vào thì 3 segment được gán base address nhưng chọn ra các giá trị đẹp thay vì chọn ngay giá trị tiếp theo. VD 1016 sẽ lấy 1018 chứ k lấy tiếp 1017. Bên phải là chuẩn, bên trái là nếu lấy như bth
+
+-> Plan memory cho object file mà có multiple segment. Đây mới là bth vì 1 object file thg có nhiều segments chứ k chỉ 1 như text, data, bbs. Gom các segment cùng loại thành 1 ở output và gán base address cho tưng cái ở output thôi.
+
+Cơ chế là cùng segment thì dùng word alignment (address chia hết cho 4), khác segment thì page alignment (thường là chia hết cho 4096) => chú ý đổi sang hexa
+Data và BBS coi là cùng segment
+
+Trong ELF thì object file nhiều trường hơn, segment k bắt đầu từ address 0, stack trên code, heap dưới code. Cơ chế tương tự
+
+-> Symbol là reference trong object file, lưu trong symbol table
+Symbol có thể là biến global, biến local, name của từng section, row index của source code, weak
+
+Cách linker xử lý symbol
+Symbol table lưu dạng hash các linked list hash(symbol)%N
+
+Symbol'name manging
+
+Hardware relocation (virtual -> physical) và software relocation (relocation cho hàm và biến tương thích với virtual address space)
+Relocation when loading và relocation when linking
+
+Relocation cơ chế cũng chỉ là lấy các segment address trong relocation table ra rồi cộng base segment address vào là xong
+
+
+
+Giải đề gk thứ 3 trong folder:
+Câu 1:
+1) Điều đặc biệt là cdecl truyền từ address lớn về address nhỏ dần
+Vấn đề là nó gọi call thì tự động lưu address phía sau vào stack chiếm 4 ô chứ ta k làm điều này thủ công
+fastcall nên truyền phải qua trái
+2) 
+a) 
+f: 
+push %ebp
+movl %esp, %ebp
+sub $12, %esp
+cmpl -16(%ebp), 0x0
+jne L1
+movl 8(%esp), %eax
+jmp L2
+L1:
+movl 16(%ebp),%eax
+subl 1, %eax
+movl 12(%ebp), %ecx
+movl 8(%ebp), %edx
+addl %ecx, %edx
+push %eax
+push %ecx
+push %edx
+call f
+add $12,%esp
+L2:
+leave
+ret
+=> Chú ý lúc gọi đệ quy cũng cần giải phóng cho đúng
+b) 
+push %eax
+push %ebx
+push %ecx
+
+f:
+pushl %ebp
+movl %esp,%ebp
+cmp %eax,0
+jne L1
+movl %ecx,%eax
+jmp L2
+L1:
+add %ebx, %eax
+sub $1,%ecx
+call f
+L2:
+leave
+ret
+
+
+Để chạy fastcall, điều đb là tiết kiệm thanh ghi thông qua việc gán tiếp các biến truyền vào từ thanh ghi vào stack và xử lý tiếp
+
+Trong kiến trúc I32A (Intel 32-bit Assembly), lệnh push được sử dụng để đẩy giá trị từ một thanh ghi hoặc một vị trí bộ nhớ lên đỉnh của ngăn xếp. Lệnh push không được sử dụng trực tiếp để đẩy địa chỉ của một thanh ghi lên ngăn xếp. Thay vào đó, nếu bạn muốn đẩy địa chỉ của một thanh ghi lên ngăn xếp, bạn cần sử dụng lệnh lea (load effective address) để tính toán địa chỉ và sau đó đẩy giá trị của địa chỉ đó lên ngăn xếp bằng lệnh push.
+=> k sao cả
+
+

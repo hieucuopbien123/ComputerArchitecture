@@ -1,0 +1,139 @@
+Main mem:
+B2: 
+a, b) Điều đb là số bit dùng ở page table entry phụ thuộc vào số lượng frame ở đây chứ nó k tuân theo số page của address space vì address space có thể chiếm đủ hoặc không chứ kích thước content của page table entry phải bao đủ được hết frame. Nhưng số lượng entry lại phải bao đủ đầu vào là có bao nhiêu page
+d) hay vì nó k cần phải đổi ra binary qua lại ở đây
+e) 8192
+
+B5: 
+Theo cách hiểu chuẩn trong slide thì chỉ cần 6 bit trong entry của page table:
+Outer page chứa page table -> inner page chứa các entry là từng page lớn, số lượng entry này tương đương với số lượng entry trong outer page table. Trong mỗi page con lại có 1 lượng page table riêng và số lượng là tùy ý. Tức nếu mỗi page lớn có 1 page con thôi thì nó như single level và là maximum số lượng entry của page table vì số lượng page lớn phải tăng -> main mem chứa frame
+
+=> Nhưng theo cách làm của bài 5 và bài 6 thì các phương pháp 3 structure thì page table entry lưu trực tiếp địa chỉ frame chứ k lưu index frame như bth mà đủ số bit tạo frame luôn => bài 6 ta giữ nguyên cách làm và chỉ cần nhớ cách làm là master hash page table, k cần thắc mắc gì thêm
+
+=> Bên cạnh đó với 2 level page table b5, nó còn coi page cha chứa các page con thì 1 page cha chính là 1 frame. Kích thước page cha chính là kích thước frame và do đó tính được 1 frame chứa bnh entry page table là 1 page cha chứa bnh page con. Cái này là tối ưu và là mặc định để lưu, còn thực tế có thể dùng 1 lượng page nhỏ hơn ở trong 1 frame nên tạo ra câu b là maximum lượng entry vì có thể giảm page và tăng entry.
+
+b) maximum số lượng entry, ta nên hiểu là:
+outer page table -> inner page table[[page0,page1,page2][][] -> gom 3 page vào làm 1 page, số entry là số lượng page chia 3] -> maximum số entry thì số lượng page trong 1 entry phải là nhỏ nhất tức 1 page con trong 1 page cha hay số lượng maximum thì y như page table bình thường single level
+
+Bài này nó hiểu là inner page table nằm trong main mem nên bản thân cái entry chính là đầu vào inner page table mà outer page table refer tới cũng là 1 frame và địa chỉ 1 frame cần 16 bit và nó coi lưu mặc định cả address của frame nên cần cả 16 bits
+Cái size of page cha = size 1 frame là hoàn toàn hợp lý vì page table nằm trong main mem và chia ra như v thì lưu từng frame là ok, nhưng nếu 1 frame có thể chỉ lưu 1 page thành ra tạo ra phần thừa trong frame vì k dùng hết byte size
+
+Tức để tính maximum thì 1 frame có 1 page, minimum là tối ưu và là TH mặc định thì bằng kích thước 1 frame chia cho address kích thước page, kích thước page là 2 bytes
+=> vẫn chưa gỡ rối được cái cục 16 bit ở câu a và ta vẫn coi mặc định là lưu cả address của frame với bài này. Đi thi tùy tự ứng biến dùng cách nào
+ 
+B6:
+Nó coi gần như mọi dạng trong 3 structure thì page table lưu trực tiếp địa chỉ của frame trong bộ nhớ chứ éo lưu index
+Bài này hay ở chỗ, mỗi table entry lưu 1 pointer vào linked list lưu ở 1 vị trí khác trên harddisk chứ k lưu cả list nên kích thước fix và nhỏ
+
+
+
+Virtual mem:
+B1: 
+TLB hit thì k có page fault và nó là cache của page table, nếu TLB hit thì page chắc chắn đang nằm trong page table
+
+B2: 
+Khi page fault thì state của thread bị đổi running -> blocked -> ready
+TLB miss thì thread k đổi state
+I/O operation xảy ra thì mới đổi trạng thái của thread, VD khi đọc ghi từ harddisk và main mem
+
+B5: demand paging là đang nói page fault. associative mem là TLB
+Thỉnh thoảng chưa chắc tg TLB miss đã là 2x, đề bài k nói mới v, có thể đề bài tự cho
+Cái đặc biệt nx là page fault xong nó cộng thêm cả time access lại lần nx và coi bị TLB miss luôn vì khi lấy về nó có thao tác lại mà
+
+B8: ta đang hiểu là TH single page thì page table là của 1 page riêng, mỗi page có 1 page table
+
+B9: segment ez
+
+B10:
+ba) 
+4 4 4 4 6 6 6 6 6 6 6 7 7 7 7 
+    7 7 7 3 3 3 3 3 3 3 3 3 1 
+      0 0 0 4 4 4 4 4 4 4 4 4
+=> Trap tính page fault toàn sai, cái 4 4 ban đầu thì cái 4 thứ 2 k bị page fault chứ
+
+bb)
+4 4 4 4 6 6 6 6 6 6 6 6 6 6 1 
+    7 7 7 3 3 3 3 3 3 3 4 4 4 
+      0 0 0 4 4 4 4 4 7 7 7 7
+
+bc)
+4 4 4 4 4 4 4 4 4 4 4 4 4 4 1  
+    7 7 7 3 3 3 3 3 3 3 3 3 3
+      0 6 6 6 6 6 6 6 7 7 7 7
+
+B11:
+a) 
+0 1  2 3  4  5 6 7
+0 3 11 4 15 12
+v v  v v  v  v i i
+
+số lượng entry của page table là 2^x cover đu lượng page, từng entry dùng đủ 1 lượng bit để đánh chỉ mục hết đủ frame. address logical k liên quan gì đến số lượng frame
+
+b) 16*4 = 64 bytes
+
+c)
+Trap offset bit là 2 bit vì cần ít nhất 3 bit làm entry cho page table, page table content dùng 4 bit để đánh dấu frame
+
+d) 01101 -> 13
+
+e) 
+
+
+
+File system:
+B2 ???
+
+Bt 3b bổ sung:
+Consider a UNIX-style inode with 10 direct pointers, one single- indirect pointer, and one double-indirect pointer only. Assume that the block size is 4K bytes, and that the size of a pointer is 4 bytes. How large a file can be indexed using such an inode?
+=> 10*4KB + 1*1KB*4KB + 1*1KB*1KB*4KB = 40KB + 4MB + 4GB
+
+
+10*4KB + 1*1KB*4KB + 1*1KB*1KB*4KB
+B4: 
+có 2^30 block cần 30 bit để đánh dấu block nhưng biểu diễn dạng bit string power of 2 vì nếu lẻ thì 1 block là số tròn có thể k chia hết cho số lượng block được => nên đổi về power of 2 làm tròn lên
+
+B5: 
+1111 1110 0000 0000
+Sau khi viết file B:
+1111 1111 1111 0000
+Xóa file A:
+1000 0001 1111 0000
+Viết file C:
+1111 1111 1111 1100
+Xóa file B:
+1111 1110 0000 1100
+
+B6: brute force tìm lại trong tất cả thấy cái nào free cho lại vào list thôi
+
+B8:
+10*1KB + 1*2^8 B*1KB + 1*2^8B*2^8B*1KB + 1*2^8*2^8*2^8*1KB
+-> điều đặc biệt là no vẫn refer tới 1 block có kích thước đó nhưng chứa reference tới block khác
+
+B9: ok
+
+
+
+Synchronization:
+B1: Chú ý éo phải lúc nào cũng chỉ 2 thread chạy đâu mà 1 hàm push hay pop đó có rất nhiều cái chạy cùng lúc
+Ở đây để fix triệt để thì phải biến cả push và pop là critical section cả luôn, thì 1 cái thực hiện 1 lần, khắc phục được lỗi nhưng lại thành sequence mất r, k parallel nx
+
+B2: Điều đặc biệt là cái lỗi này rất kinh điển trong lập trình đa luồng. Cần cẩn thận khi cả read và write biến vì read xong có thể sai luôn làm hỏng đk if
+
+B8: Ta có thể dùng số lượng semaphore tối thiểu là mỗi process 1 semaphore. Ở đây có thể dùng 5 semaphore nhưng điều đó là thừa. Ta chỉ cần nhớ quy tắc: mỗi process chỉ được wait 1 semaphore của nó và signal semaphore của process khác là được
+
+B9: Trap phải dùng 2 semaphore chứ kp P1, P2 chung 1 semaphore nhé, quy tăc vẫn ở trên
+
+B10: 
+a) k có giá trị 2
+
+B11: ok
+
+B12: 
+PP while(){wait; <exec>; signal} cho 2 thread sẽ cho 2 exec 2 thread k được thực hiện liên tục quá 2 lần với mỗi thread là 1 biến semaphore riêng, cái này signal cho cái kia. Giá trị khởi tạo khác nhau sẽ tạo ra case khác nhau => như b6
+
+
+Bt bổ sung:
+Assume within an i-node there are 12 direct pointers, a single-indirect pointer, and a double-indirect pointer. Assume a 4KB block size, and disk addresses that are 32 bits.
+What is the maximum file size (measured in number of blocks) on this Unix system?
+12 + 1KB + 1KB*1KB = 1049612 blocks
+

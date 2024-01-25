@@ -1,0 +1,104 @@
+Realtime System 
+
+
+
+# Basic
+Realtime system k cần xử lý nhanh mà cần xử lý và phản hồi yêu cầu trong khoảng thời gian cố định cho phép và đoán trước được.
+High performance tức đảm bảo chuẩn trong giới hạn thời gian. Còn memory footprint tức là phải tốn ít mem
+
+Có 2 loại:
+1) Hard Real-Time Systems: Trong hệ thống này, việc không đáp ứng thời gian đúng hạn có thể dẫn đến hậu quả nghiêm trọng và thậm chí có thể không chấp nhận được. Ví dụ về hệ thống thời gian thực cứng bao gồm hệ thống điều khiển máy bay, hệ thống phanh ABS trên ô tô, và hệ thống điều khiển nhà máy điện.
+
+2) Soft Real-Time Systems: Trong hệ thống này, việc không đáp ứng thời gian đúng hạn không gây ra hậu quả nghiêm trọng và vẫn có thể chấp nhận được đến một mức độ nào đó. Ví dụ về hệ thống thời gian thực mềm bao gồm hệ thống phát video hoặc âm thanh trực tuyến, nơi một sự cố nhỏ trong thời gian phản hồi có thể chấp nhận được.
+
+
+
+# RTOS và GPOS 
+Real-Time Operating System (RTOS) và General-Purpose Operating System (GPOS) là hai loại hệ điều hành chính được sử dụng trong các hệ thống máy tính.
+
+2) General-Purpose Operating System (GPOS) được thiết kế để xử lý một loạt các tác vụ khác nhau, không nhất thiết phải đáp ứng các yêu cầu thời gian thực. GPOS thường được sử dụng trong các máy tính cá nhân, máy chủ, và các hệ thống máy tính thông thường. Các ví dụ phổ biến của GPOS bao gồm Windows, macOS, và các phiên bản của Linux như Ubuntu, Fedora, và Debian.
+
+1) Real-Time Operating System (RTOS) được thiết kế để xử lý các tác vụ thời gian thực, nghĩa là các tác vụ mà kết quả không chỉ phụ thuộc vào đúng hay sai, mà còn phụ thuộc vào thời gian mà kết quả được sản xuất. RTOS thường được sử dụng trong các hệ thống nhúng và các hệ thống yêu cầu độ chính xác cao về thời gian, như hệ thống điều khiển máy bay, hệ thống phanh ABS trên ô tô, và hệ thống điều khiển nhà máy điện.
+
+Vd: 
+FreeRTOS là một RTOS mã nguồn mở phổ biến cho các hệ thống nhúng. FreeRTOS hỗ trợ nhiều kiến trúc vi xử lý khác nhau và cung cấp các tính năng như đa nhiệm, đồng bộ hóa nhiệm vụ, và quản lý bộ nhớ.
+
+QNX là một RTOS thương mại được sử dụng rộng rãi trong ngành công nghiệp ô tô để chạy hệ thống thông tin giải trí và các hệ thống điều khiển khác.
+
+VxWorks là một RTOS thương mại được sử dụng rộng rãi trong nhiều ngành công nghiệp, bao gồm hàng không, quốc phòng, y tế, và tàu vũ trụ. VxWorks đã được sử dụng trong nhiều dự án nổi tiếng, bao gồm tàu vũ trụ Mars Rover của NASA.
+
+RTOS/32: Đây là một RTOS thương mại được thiết kế cho các hệ thống nhúng x86. RTOS/32 hỗ trợ đa nhiệm, đa xử lý, và đa luồng.
+
+Zephyr là một RTOS mã nguồn mở được tạo ra bởi Linux Foundation cho các hệ thống nhúng. Zephyr hỗ trợ nhiều kiến trúc vi xử lý và cung cấp các tính năng như đa nhiệm, đa luồng, và quản lý bộ nhớ.
+
+-> Interrupt Service Routine (ISR) hay trình phục vụ ngắt, là một hàm hoặc một đoạn mã được thực thi khi một ngắt xảy ra. Ngắt là một sự kiện được tạo ra bởi các thiết bị phần cứng hoặc phần mềm để yêu cầu sự chú ý của CPU. Khi một ngắt xảy ra, CPU sẽ tạm dừng công việc hiện tại, lưu trữ trạng thái hiện tại, và chuyển sang thực thi ISR tương ứng với ngắt đó. ISR sẽ xử lý ngắt, sau đó thông báo cho CPU để tiếp tục công việc bị gián đoạn.
+
+ISR thường được sử dụng để xử lý các sự kiện phần cứng như nhận dữ liệu từ một cổng nối tiếp, hoàn thành một hoạt động đọc/ghi trên đĩa, hoặc nhận một tín hiệu từ bộ định thời. Trong một số hệ điều hành, ISR cũng có thể được sử dụng để xử lý các ngắt phần mềm được tạo ra bởi các chương trình người dùng.
+
+-> BSP (Board specific package) là 1 layer tầng cao gắn ngay với hardware. VD ARM CPU, MIPS
+Nó là một tập hợp phần mềm hỗ trợ cho một loại bo mạch cụ thể trong một hệ điều hành nhúng. Nó cung cấp các trình điều khiển cần thiết để tương tác với phần cứng cụ thể của bo mạch và thường bao gồm các thành phần như bootloader, trình điều khiển phần cứng, và hệ thống tệp.
+
+BSP cung cấp một cách tiện lợi để bắt đầu phát triển phần mềm cho một bo mạch cụ thể, bằng cách cung cấp tất cả các thành phần cần thiết để chạy hệ điều hành và tương tác với phần cứng.
+VD Software component CMSIS giúp dùng các thành phần của hardware component như cache, register,.. trong ARM CPU chip
+=> Do đó luôn có BSP là sofware gắn ngay với target hardware, cung ra interface. Nó là connection trung gian giữa realtime OS (Kernel) và hardware
+
+
+
+# Task trong realtime system
+Trong Real-Time System, task và thread dùng để mô tả các đơn vị công việc cơ bản mà hệ thống phải xử lý.
+- Task: hiểu là một đơn vị công việc độc lập có thể được lập lịch và chạy độc lập. Mỗi task có một trạng thái riêng (chẳng hạn như trạng thái chờ đợi, chạy, hoặc đã hoàn thành), và thường có một ngăn xếp (stack) riêng để lưu trữ thông tin trạng thái. Một task có thể bao gồm một hoặc nhiều threads.
+- Thread: Một thread là một đơn vị công việc nhỏ hơn, thường là một phần của một task. Trong một số hệ thống, các threads trong cùng một task có thể chia sẻ một số tài nguyên, như ngăn xếp hoặc không gian bộ nhớ. Trong một số RTOS, khái niệm "thread" và "task" có thể được sử dụng một cách tương đương.
+=> Tức task là 1 khối công việc lớn độc lập nhau có nhiều thread, còn các threads trong task mới có thể chia sẻ thông tin cho nhau
+
+OS có thể thực hiện nhiều task interleave nhau và khi đó sẽ có context switching
+
+Task giống task trong C#, thread mới là luồng. Tức đúng ra phải là 1 task có thể được thực hiện bởi nhiều thread
+
+-> Pb semaphore và mutex:
+1 task lock semaphore và thực thi thì semaphore đó có thể release bởi 1 task khác. Counting semaphore còn cho phép nhiều hơn 1. 
+Nếu task lock mutex, chỉ có task đó mới release được mutex. Tức chỉ 1 luồng truy cập tài nguyên tại 1 thời điểm
+
+-> Dining philosophers problem 
+Vấn đề 5 nhà triết học ngồi trên bàn tròn có 5 cái dĩa. Mỗi người cần 2 dĩa để ăn, nếu k sẽ phải chờ 2 người trái phải release để mình có dĩa mà dùng. Thực hiện tất cả song song.
+VD Nếu tất cả philosophers cùng lấy hết left fork sẽ block lẫn nhau và bị deadlock
+
+Giả sử fix bằng CSMA-CD vẫn gây deadlock ở solution 2. Bản chất là thêm 1 khoảng thời gian random, vậy thì sau nhiều vòng sẽ có lúc tất cả cùng lúc lấy left fork và lại deadlock
+Chú ý mutex vẫn có thể down up bth như counting semaphore nhưng chỉ trong 1 task.
+
+Ý tưởng là viết hàm khi các philosopher lẫy dĩa thì chỉ 1 người được thực hiện và release khi thực hiện xong (tức dùng mutex). Trong quá trình lấy dĩa thì 1 người phải check dĩa trái phải đều free thì lấy cả 2 luôn. Nếu không lấy được dĩa thì những người đó liên tục query thoát khỏi mutex rồi vào lại mutex và check đến khi có dĩa để ăn thì mới k query nữa.
+Nhưng họ k làm kiểu query liên tục k cần thiết như v mà dùng thêm counting semaphore. Dùng 5 biến counting semaphore cho 5 triết gia. Khi 1 người lấy dĩa sẽ khóa semaphore của 2 người bên cạnh. Khi họ ăn xong sẽ release 2 người bên cạnh. Người bị khóa k lấy được dĩa sau khi thoát mutex sẽ check semaphore ok thì mới query lại rồi vào mutex lấy dĩa tiếp.
+Họ phải dùng semaphore ở case này vì 1 thread có thể call tới 1 thread khác
+
+Tức là mỗi lúc lấy dĩa là khóa 2 người bên cạnh, tức phải check 2 người bên cạnh đang k ăn thì mới lấy 2 dĩa. Nhưng nếu 2 thằng đó cũng đúng lúc vừa check xong thì hỏng, do đó phải chỉ cho 1 đứa được thực hiện việc lấy dĩa là xong, sẽ đảm bảo lấy 1 lúc 2 dĩa vì 2 đứa bên cạnh k thể cùng lấy được
+
+
+
+# Scheduling Alg
+Xét nhiều task cần được thực hiện trên multicore với thời gian hoàn thành khác nhau, các task cũng phụ thuộc trước sau với nhau.
+
+Graham Theorem: Nếu 1 task đã tối ưu với lượng tài nguyên hardware hiện có, việc tăng thêm phần cứng sẽ k đem lại hiệu quả. Task giảm thời gian xử lý hoặc ít sự phụ thuộc hơn thậm chí còn tăng thời gian xử lý tổng
+
+Nguyên nhân vì nó không phân chia tối ưu để đạt được optimal. Software dev có thể đạt được tối ưu nếu biết chia các task lớn thành nhiều task nhỏ. Tốc độ sẽ optimal nếu k có task nào dài hơn hẳn so với các task còn lại
+Thêm share resource constrains có thể gây anomalies 
+
+-> Tạo thuật toán giúp optimal schedule các task:
+Chỉ xét uniprocessor
+Synchronous arrival time tức là tất cả các task bắt đầu cùng lúc với t = 0. Ta cũng biết mọi thông tin ban đầu về task như thời gian execution của task đó. Nếu không synchronous arrival time tức các task đến vào các mốc thời gian khác nhau và ta chỉ biết mọi thông tin về task khi nó đến
+
+--> Jackson alg: Cái nào deadline sớm thì làm trước. 
+Nó có mục tiêu minimize lateness time (Lmax) là max(độ trễ của từng task), k đảm bảo các task sẽ finish ontime
+VD nó k tốt trong 1 số TH mà 1 task bị miss mà ta vẫn cố làm dù nó quá deadline trong khi có thể dừng lại làm task khác để đảm bảo lượng task miss là ít nhất 
+Lmax(ab) = max(La, Lb)
+La = finishtime a - deadline a
+
+-> EDD: all task đi vào cùng lúc t = 0
+EDF: synchronous activation is release, preemptive
+
+Bratley đặt thêm đk về việc biết trước thông tin về các task ngay từ đâu dù nó k arrival at 0. Thuật toán vẫn xử lý được (nếu k có đk sẽ là NP-hard)
+Ý tưởng là backtrack branch and bound duyệt mọi case để tìm được feasible solution mà xử lý hết các task. Cái này giúp tìm feasible, not optimal, ta vẫn có thể tìm optimal dựa vào việc chạy hết mọi case backtrack và tìm cây tốt nhất
+
+Khi thêm precedence constraint thì 2 pp này biến thành:
+EDD -> LDF
+EDF -> EDF modified version.
+
+

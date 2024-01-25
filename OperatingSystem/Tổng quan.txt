@@ -1,0 +1,136 @@
+-> Main mem:
+Kiến thức background: program chạy được phải load vào mainmem và đặt trong 1 process
+Câu trúc bộ nhớ: 4 phần
+logical và physical address space: bản chất là ánh xạ bằng MMU
+Address space protection: base + limit
+Variable partition: dùng hole là contiguous mem management
+Fragment probs: k tận dụng được hết -> compaction
+-> page: chia logical thành page, chia physical thành frame, ánh xạ 2 cái qua page table
+TLB: như buffer vào thẳng main mem
+Effective access time: EAT = 90%x+10%2x
+Invalid, valid bit
+Page table lớn sẽ tốn và lâu -> 3 structure:
+1) Hirarchical Page Table được implement bằng technique 2 level page table: [p1,p2,d]
+=> Chốt: hiểu như trong slide, inner page có hàng loạt page đầy đủ như bth và gom lại đánh địa chỉ đầu tiên để outer page trỏ tới, mỗi entry vẫn là đầy đủ page
+2) Hash page table: hash m-n bit đầu address -> entry in hash table => chú ý nó thay page table hoàn toàn bằng hash table. 
+3) Inverted Page Table: giảm mem nhưng tăng time. Thay vì: logical address -> page table -> physical mem => ta dùng: entry in page table -> physical mem. Mọi process chung
+Swap: process đi ra backing store rồi đi vào main mem => swap the whole process. Context switch đi kèm swapping: next process khi switch phải swap out current process và swap in target process
+=> Cơ chế => sắp xếp bộ nhớ process vào physical mem -> liên tiếp k tối ưu nên dùng rời rạc -> page rời rạc lại có lỗi nên dùng 2 level
+
+Segmentation: mỗi segment là 1 contiguous mem qua segment table => check với limit rồi + base
+
+
+
+
+-> virtual mem
+Valid-invalid bit: trong harddisk thì là invalid
+Demand paging: 
+Copy-on-write: chỉ read thì share chung, write thì copy
+Page Replacement: FIFO, Optimal, LRU dùng counter/stack implementation
+
+Frame allocation: 1 process nên có bnh frame, nên có ít page nhất có thể để giảm page fault
+  Fixed allocation: Equal allocation(VD 5 processes, 100 frames) và Propotional allocation(tỉ lệ size)
+  Priority allocation: khi dùng page replacement thì chọn replace frame nào
+    Global allocation: chọn swap frame của process có priority thấp hơn
+    Local allocation: more consistent
+
+Thrashing: 
+Quá ít frame làm swap in/out liên tục
+Low CPU utilization, increase degree of multiprogramming
+Fix: chỉ dùng local allocation với lượng frame vừa đủ mỗi process ok nhưng service time có thể tăng khi cần đến global allocation
+=> Cơ chế Working-Set: tìm các page refer tới gần nhất WSSi của process Pi trong "delta" time => so sánh m với D = Sigma(WSSi) là xong => interval time, reference bit
+=> Cơ chế PPF: Đặt page-fault frequency hợp lý, frame nào quá nó thì gain frame, k thì lose frame, dùng local replacement.
+
+
+
+-> Synchronization:
+Producer-consumer probs: count và buffer
+Racing condition 
+Critical section: 3 quy chuẩn
+  Fix với 2 hardware instruction:
+    Test&set: trả ra lock và gán là true
+    Compare&swap: compare với expected value và gán new value -> ứng dụng cho atomic adder chẳng hạn
+      Test&set dùng boundwaiting với mảng waiting[n] và biến boolean lock
+  Mutex lock: khác với 2 cái trên vì cái này ở HLL, cơ chế cũng implements bằng hardware instruction bên trong
+    busy waiting với spinlock
+  Semaphore: wait() và signal() đều là atomic operations, mặc định có busy waiting
+    Binary semaphore: ban đầu S là 0
+    Counting semaphore: S là số lượng process/thread có thể truy cập vào critical section 1 lúc
+    Implementation without busy waiting: block trong wait và wakeup trong signal, add và remove from queue
+    Blocking semaphore: S âm luôn để 1 lượng xong mới cho thực hiện
+    Ứng dụng:
+      Bounded Buffer Prob: dùng counting semaphore check đk và tránh xung đột bằng binary semaphore
+      Read Write Prob: access database giới hạn n reader, 1 writer, k read/write cùng lúc
+Deadlock: 2 thg cùng khóa và thằng này giải thằng thằng kia kbh được unlock / mọi TH kbh thoát khỏi wait()
+Monitor: class chỉ cho 1 thread thực hiện 1 lúc
+  Condition variables: giống counting semaphore nhưng k có biến đếm mà chơi điều kiện bth
+
+
+
+-> File system:
+Secondary storage devices: nơi lưu file các thứ
+  Types of storage devices: 
+    HHD: platter xoay, rw head moves
+      Cấu tạo: seek time, rotational latency
+      Performance: seek time, rational latency, transfer time
+    SSD: non volatile - NVM
+      Cấu tạo: tĩnh và no seektime or rotational latency, k thể overwrite mà phải erase ghi mới, số lần erase ảnh hưởng tuổi thọ, NAND semiconductor lưu mix pages valid và invalid data
+  Disk formating: đĩa trống -> chia thành sector là lowlevel formatting -> disk partition thành từng nhóm cylinder lưu file -> tạo file system 
+Files: process tạo file sẽ gán name cho nó và lưu được nó trên disk
+  File naming: rule tùy hệ điều hành, file extension giới hạn 255 ký tự và là thứ quyết định ứng dụng mở file
+  File attributes: file metadata cung thông tin đi kèm
+  Directories: is a file
+    Single level directory: mỗi directory chứa mọi file
+    Hierarchical directory: tree leaf là file => Absolute path name và Relative path name
+File systems: computer booted / file system touching -> superblock cung thông tin -> detect free block -> inode, FAT, root directory, other files
+  Để detect free block
+    free block linked list: mỗi block chứa (255 free block) khác = size of block / size each block number - 1 cho pointer tới block tiếp theo
+    bitmap: mỗi block lưu 1 lượng bit, tổng là n bits với tổng n blocks => số free block trong 1 block là byte size * 8 - 32 vì cũng linked list
+  Allocating physical storage to files: cần gán blocks cho file để dùng
+    Contiguous allocation: chuỗi block liền nhau gán cho file, chỉ cần store address block đầu tiên để xđ 1 file -> fragmentation
+    Linked list allocation using block: file store trong disk blocks, access phải chase all the pointers
+    Linked list allocation using table: table store address của next block của file, size = number of block
+      FAT: Directory có files thì chứa pointer tới block entry đầu tiên trong FAT của mỗi file. Lưu harddisk -> mainmem khi làm vc với partition.
+    Inode: mỗi file 1 inode chứa address set of blocks trên disk, khi mở file nó load vào main mem để file dùng
+      Indexed allocation: directory entry trong table point vào inode của file, inode trỏ tới data block
+      Multilevel indexed allocation: inode point to inode point to data
+      Hybrid indexed allocation: có cả trực tiếp, single, double,..
+
+######################
+
+
+Windows file systems allocate như nào:
+  FAT 12, 16, 32: Each partition hold a FAT để map file sang physical blocks. Số là số bit cần để index block trong FAT table
+  NTFS: mỗi partition có fixed block size và có 1 cái Master File Table
+    Master File Table: có mỗi entry là 1 file 1KB chứa metadata, địa chỉ block dùng cho file đó
+      Entry: chứa 1 sequence of [header,value]; value nhỏ thì place trong entry, lớn thì lưu trên disk block riêng r value chỉ cần lưu pointer tới nó
+        Header: có 13 attributes header có thể có.
+        Structure of a record: mặc định có standard info(timestamp các thứ) và file name, bắt đầu bằng offset of block với: Stream > block > record
+Linux file systems 
+  Linux file structure on disk: boot block, super block, inode list, data block
+  ext2: chia partition thành các Block Group, mỗi group chứa superblock, group descriptor,... Boot chứa riêng 1 group
+    Block bitmap là free block, inode bitmap là free inode -> fix giới hạn
+  Structure of directory entries: chứa các thông tin metadata của file. Tương tự window: [filename, inode number] -> tìm data
+  Structure of inodes: inode number dùng để index để lấy data vào mem từ inode table. Có single/double/.. indirect block
+    inode table: data structure of kernel lưu inode nào lấy ra data nào
+  File descriptor: Main mem có -> process open file trả lại -> [file descriptor table] trỏ -> [opened file table] trỏ -> [i node table] -> address on disk -> load to main mem
+  Implement directories and open file: open file để read; cơ chế open file; directory entry provide thông tin để tìm file và cũng lưu attribute của file
+  VFS: Linux mount mọi multiple file system thành 1 VFS structure
+Disk partitioning: 1 file system corrupted, số còn lại vẫn hđ
+
+
+
+
+-> Đổi đơn vị:
+1s = 10^3 ms = 10^6 us = 10^9 ns 
+1 micro giây = 1 us = 10^3 ns
+1 ms = 10^6 ns
+-> mun
+
+Binary:
+1 KB = 2^10 B
+1 MB = 2^10 KB
+1 GB = 2^10 MB
+1 TB = 2^10 GB
+=> TGMK
+

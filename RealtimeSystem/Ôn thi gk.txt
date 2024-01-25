@@ -1,0 +1,294 @@
+# Slide 1
+-> RT_PREMPT (Real-Time Preemption) là một bản vá cho Linux được thiết kế để cải thiện khả năng thời gian thực của hệ điều hành. Nó cho phép các tiến trình và trình điều khiển ngắt có thể bị chặn, giúp giảm độ trễ và tăng khả năng phản hồi của hệ thống.
+Tuy nhiên, RT_PREMPT không phải lúc nào cũng đủ cho một hệ thống thời gian thực. Dưới đây là một số lý do:
+1. Độ trễ ngắt: RT_PREMPT giảm độ trễ ngắt nhưng không loại bỏ hoàn toàn. Điều này có thể gây ra vấn đề trong các hệ thống yêu cầu độ trễ rất thấp.
+2. Định thời: RT_PREMPT không thay đổi thuật toán lập lịch của Linux. Do đó, nó có thể không đáp ứng được các yêu cầu về định thời chặt chẽ của một số hệ thống thời gian thực.
+3. Các vấn đề về phần cứng: RT_PREMPT không thể giải quyết các vấn đề liên quan đến phần cứng, như độ trễ do phần cứng hoặc các vấn đề về đồng bộ hóa.
+4. Các vấn đề về phần mềm: Các vấn đề về phần mềm, như các vấn đề về đa luồng hoặc đồng bộ hóa, cũng không thể được giải quyết bằng RT_PREMPT.
+Do đó, trong một số trường hợp, bạn có thể cần sử dụng một hệ điều hành thời gian thực chuyên dụng hoặc sử dụng các giải pháp phần cứng để đáp ứng các yêu cầu về thời gian thực.
+
+-> Hệ thống thời gian thực thường được sử dụng trong các hệ thống nhúng vì chúng cần phải đáp ứng các yêu cầu thời gian thực cụ thể. Các hệ thống nhúng thường được sử dụng trong các ứng dụng như thiết bị y tế, ô tô tự lái, thiết bị điện tử tiêu dùng, và các thiết bị IoT, nơi mà việc đáp ứng đúng thời hạn là rất quan trọng.
+
+-> Hệ thống realtime nhận input là hàng loạt các event và task cần hoàn thành trong giới hạn timing constraints. Cần dùng thuật toán schedule các task để thực hiện thỏa mãn giới hạn thời gian và logic đúng (slide 6). Từng task đều phải thực hiện đúng timing constraints.
+
+-> Trong hệ thống thời gian thực, nguyên tắc "Don't trust average" có nghĩa là không nên dựa vào giá trị trung bình để đánh giá hoặc dự đoán các sự kiện xảy ra trong hệ thống. Điều này bởi vì trong môi trường thời gian thực, độ trễ cực đại hoặc thời gian phản hồi tối đa có thể quan trọng hơn so với giá trị trung bình.
+Ví dụ, nếu một hệ thống thời gian thực có độ trễ trung bình thấp nhưng đôi khi xuất hiện độ trễ cực đại rất cao, việc dựa vào giá trị trung bình có thể dẫn đến việc đánh giá sai lầm về khả năng đáp ứng thời gian thực của hệ thống. Do đó, trong hệ thống thời gian thực, việc đánh giá và dự đoán cần phải dựa trên các giá trị cực đại và thời gian phản hồi tối đa thay vì chỉ dựa vào giá trị trung bình. Vì việc đánh giá sai lầm trong 1 case nhỏ có thể để lại hậu quả lớn
+
+
+
+# Slide 2
+-> Realtime OS
+
+-> Đặc điểm của RTOS
+--> Scheduler
+--> Object
+--> Services 
+--> Multi task
+--> Dispatcher:
+Trong một hệ điều hành thời gian thực (RTOS), khi hệ thống đang chạy, luồng thực thi (flow of control) sẽ đi qua một trong ba khu vực sau:
+1. Qua một nhiệm vụ ứng dụng (application task): Đây là phần của chương trình chính mà người lập trình viết để thực hiện các chức năng cụ thể của ứng dụng. Các nhiệm vụ ứng dụng thường thực hiện các tác vụ như xử lý dữ liệu, giao tiếp với người dùng, hoặc thực hiện các tính toán cụ thể.
+2. Qua một ngắt nguyên tử (ISR - Interrupt Service Routine): Khi một sự kiện ngoại vi xảy ra, như một tín hiệu từ cảm biến, ngắt sẽ được kích hoạt và điều này sẽ dẫn đến việc thực thi một ISR. ISR thường được sử dụng để xử lý các sự kiện ngoại vi và có thể được thực hiện ngay lập tức mà không cần phải chờ đợi.
+3. Qua hạt nhân (kernel): Hạt nhân của RTOS quản lý việc chuyển đổi giữa các nhiệm vụ ứng dụng, quản lý tài nguyên hệ thống, và đảm bảo các yêu cầu thời gian thực được đáp ứng. Khi không có nhiệm vụ ứng dụng hoặc ISR nào cần thực thi, luồng thực thi sẽ đi qua hạt nhân để quản lý hệ thống. Thứ tự ưu tiên đã thấy rõ
+--> Schedule alg: preemptive, round robin time slice
+
+
+
+# Slide 3
+-> Task: slide nói rất rõ các thuộc tính
+-> Mutual exclusive semaphore chính là mutex. Nó là 1 loại semaphore thôi.
+-> Deadlock
+Deadlock được detect nếu có vòng trong graph
+
+
+
+# Slide 4: Scheduling
+-> Quá trình thuật toán hoạt động
+-> Notation:
+J
+Phi
+Schedulable set of tasks
+
+-> Timing constraint:
+Response time
+Value vi
+Lateness
+Tardiness of Exceeding time
+Laxity time
+Arrival time
+Start time
+Finishing time
+Absolute deadline
+Relative deadline
+Execution time
+
+-> Precedence constraints:
+Immediate predecessor
+
+-> Resource constraints
+--> Shared resource and critical section
+Khi kết hợp mutex với preemption, rất hay. Khi cả 2 task cần dùng critical section, task lower đang dùng sẽ phải chờ kết thúc critical section mới cho task higher thực hiện critical section => hiển nhiên vì lock tài nguyên mà, higher priority đâu có tự unlock
+Sinh ra state mới ngoài ready, run, block là waiting. 1 task lower priority đang thực hiện critical section sẽ k bị preempt cho task higher thực hiện critical section
+
+-> Scheduling problems
+Preemptive  Nonpreemptive
+Static  Dynamic
+Offline  Online
+Optimal  Heuristic
+
+--> Guarantee-based algorithms
+Acceptance test rất hay. Trước ta cứ nghĩ nếu mà k schedule được thì sao. Với static thì từ chối luôn, với dynamic thì check task mới thêm vào có schedulable hay k, nếu k thì reject để tránh overhead chứ kp cứ nhận r cố thực hiện miss deadline => nhận hết sẽ thành best effort
+Domino effect
+
+Có 6 cost function
+Utility function là loại cost function đặc biệt, là các tiêu chí mà tổng hợp lại để đánh giá toàn bộ schedule.
+Utility Function còn đo lường lợi ích hoặc giá trị mà một tác vụ mang lại khi hoàn thành. Một tác vụ có Utility cao có thể được ưu tiên hơn trong lập lịch. Utility có thể phụ thuộc vào nhiều yếu tố, bao gồm thời gian hoàn thành, độ chính xác của kết quả, và mức độ quan trọng của tác vụ đối với hệ thống. Có 4 loại utility function để đánh giá lợi ích mà 1 tác vụ mang lại theo 4 đồ thị
+
+-> Graham theorem rất ảo. Nhưng vấn đề là làm sao để tìm ra được optimal scheduling case.
+Thời gian completion time tăng lên khi giảm computation time khi có resource constraints => chỉ hại khi cost function là completion time
+
+
+
+# Chapter 5
+-> 3 Notation cơ bản
+
+-> Jackson's alg EDD (1|sync|Lmax)
+
+-> Horn's theorem EDF (1|preem|Lmax)
+Các thông số: Phi, Phi(t), E(t), tE(t)
+Gurantee test của các alg
+
+-> Non-preemptive scheduling
+--> Trong lập lịch (scheduling), một nhiệm vụ không chấm dứt (non-preemptive task) là một nhiệm vụ mà một khi đã bắt đầu, nó phải chạy đến hết mà không bị gián đoạn. Điều này có nghĩa là, một khi nhiệm vụ không chấm dứt đã được lập lịch để chạy, nó sẽ tiếp tục chạy cho đến khi hoàn thành, mà không cho phép bất kỳ nhiệm vụ khác nào chạy trên CPU cho đến khi nó hoàn thành.
+
+Điều này khác với nhiệm vụ có thể chấm dứt (preemptive task), nơi mà một nhiệm vụ có thể bị gián đoạn bởi một nhiệm vụ khác có độ ưu tiên cao hơn. Trong lập lịch có thể chấm dứt, CPU có thể "chuyển đổi" giữa các nhiệm vụ dựa trên độ ưu tiên của chúng.
+
+NP-hard 
+Nhưng nếu biết trước thời gian tới thì dùng branch and bound được
+
+--> Bratley's algorithm (1|no_preem|feasible)
+K có precedence constraints, vẽ cây ra, nhưng thg là đường tối ưu nhất như bth
+
+--> LDF alg (1|prec, sync|Lmax)
+Quy tắc duy nhất là chọn cái no successor và thêm dần vào queue
+Nếu case này dùng EDF sẽ k đạt optimal được như LDF với Lmax
+
+--> EDF with precedence constraints (1|prec, preem|Lmax)
+EDF bth k optimal, ta thêm 1 bước transform nữa trước khi schedule
+
+Convert từ precedence constraints và executiontime sang arrival time mới của các task
+Convert deadline của task trước từ deadline và execution time của task sau sang 1 giá trị đúng hơn
+
+
+
+# Chapter 6
+Slide 5 thì các task k có chu kỳ mà đến bất cứ lúc nào hoặc đến cùng lúc mốc 0. Slide 6 sẽ cho thấy schedule các task có tính tuần hoàn
+
+VD slide cứ vẽ ra với cái có chu kỳ lớn nhát là ra ngay có schedule hay không mà
+[X|X][X|X][X|X][X|X]
+
+-> Notation
+Assumption
+
+-> Critical instance: đã hiểu
+Là thời gian mà nếu release 1 task, task đó sẽ có thời gian response time là lâu nhất (vì các task khác ưu tiên hơn nên được xử lý để lại cái này xử lý sau nên có responsetime lâu nhất.
+=> Biết cách vẽ sơ đồ thực thi dựa vào 3 thông số (pha, T, C) 
+
+-> Hyperperiod: Thời gian schedule repeat là bội chung nhỏ nhất của các period thôi
+
+-> Processor utilization factor = Tổng C / T
+
+-> U > 1 thì là not schedule, ngược lại thì not sure
+U = Uub thì full CPU
+U > Uub thì not schedule
+U < Ulub thì schedulable
+1 > U > Ulub thì not sure
+
+-> Timeline Scheduling Alg: chính là cách bth ta nghĩ, cứ xếp lần lượt vào
+Họ đưa ra quy tắc khá hay là C1 + Cx <= 25ms voi 25ms la minor cycle
+
+-> Ealiest Deadline First Alg:
+Task đến các thời điểm khác nhau, có priority, có preemptive
+Cái trước k preemptive
+Cài này có preemptive thì k dùng EDF được coi là pp tối ưu
+=> optimality
+
+-> Rate monotonic (RM)
+TK các đặc điểm của task:
+Prem
+Sync
+Priority
+Period
+
+Trong alg này thì higher rate sẽ có higher priority. 
+=> pp này cũng optimal trong TH priority là fix cứng
+
+Cái này tương tự EDF chỉ khác duy nhất là k phải earliest time mà là tần suất cao nhất hay ít nhất thì priority cao hơn
+
+Tính schedulability của RM bằng U:
+U <= 1 là đk cần 
+U <= n(2^1/n - 1) là đk đủ
+n(2^1/n - 1) < U < 1 thì phải check thủ công vì k biết được
+
+Công thức hyperbolic bound nữa => nếu k thỏa mãn cũng phải check thủ công chứ kp đk đủ
+
+EDF tốt hơn vì có thể tìm ra feasible solution khi RM fail nhưng implement phức tạp hơn.
+RM tuy tối ưu nhưng chỉ khi so với các thuật toán có priority fix. Còn EDF k chấp vì priority các task thay đổi liên tục khi thực thi thì tốt hơn RM rồi.
+
+D là deadline relative
+T là chu kỳ lặp
+Kp lúc nào D cũng = T
+
+-> Deadline monotonic
+Deadline càng ngắn thì priorities càng cao. Rõ ràng giống hệt RM, chỉ khác khi D < T. RM lấy chu kỳ ngắn nhất thì cái này deadline ngắn nhất. Nên D == T thì 2 thuật toán là 1
+=> Cái này chỉ là feasible, dùng khi bt chỉ yêu cầu tìm feasible
+
+Cách tính schedulability (k dùng được CPU utilization): 
+Cơ chế chỉ là cộng dần lên theo thứ tự thời gian thôi. Công thức ví dụ nó chỉ thể hiện tương tự và chỉ đúng khi I + C = R
+Công thức kia là làm tròn lên, nhưng do đệ quy nên ta k thể tính cụ thể được
+
+Hiểu ngay vấn đề
+Giải pháp này chỉ để tìm feasible thôi
+
+-> EDF with D < T
+Dùng EDF với case D < T này
+Dùng DM bên trên là shortest deadline chưa đủ tốt, có TH nó nonfeasible nhưng EDF lại tìm ra feasible solution
+
+Processor demand
+Example tính nhanh được
+
+Total processor demand
+
+EDF thì cơ chế như bth thôi, k cần nói lại
+Nhưng đẻ check schedulability hay không cần tạo bảng kia với L*
+
+Construct a schedule thì phải vẽ 1 cycle bội chung nhỏ nhất ra
+
+Pha ban đầu trong task tuần hoàn chính là arrival time trong task k tuần hoàn
+Trong task k tuần hoàn thì deadline là absolute deadline, còn tuần hoàn toàn relative deadline ở mỗi chu kỳ
+
+Éo hiểu vì sao check schedulability của DM nó k check hàm G(0,L) mà chỉ vẽ L
+
+Khi task tuần hoàn ta mới tính trước có schedule hay k, với task k tuần hoàn, 1 pp có thể optimal minimize Lmax nhưng có task vẫn k schedule sai. Nhưng ta k xét tính schedulability nên k sao
+
+
+
+***Tổng kết:
+- 1 task có các tính chất là:
+Preemptive / Nonpreemptive thực hiện k ngắt quãng*
+Synchronous* / Có arrival times
+Có tham số priority / thực hiện task nào cũng được hoặc tự chế priority*
+Precedence constraints / K có precedence constraints*
+=> Khi không nói thì lấy giá trị default
+
+
+- Các thuật toán:
+1) Preemptive k tuần hoàn
+Jackson's alg (EDD) hay earliest due date (1|sync|Lmax)
+Task k tuần hoàn - Chỉ có C exec time và D là deadline
+Là thuật toán optimal khi minimize Lmax
+Cơ chế là cái nào deadline sớm nhất thì làm trước
+
+Horn's alg (EDF) hay earliest deadline first (1|preemp, có arrival time|Lmax)
+Task k tuần hoàn - Task có arrival time a, exec time C, deadline D
+Là thuật toán optimal cho preemp có arrival times
+Cơ chế là cái nào deadline gần nhất thì làm, nhảy thoải mái
+
+2) Non preemptive k tuần hoàn
+Bratley's alg (1|no preem|feasible)
+Task k tuần hoàn - Task có arrival time a, exec time C, deadline D
+Là thuật toán chỉ giúp tìm ra feasible solution (cũng có thể optimal)
+Cơ chế là lập sơ đồ cây branch and bound để tìm feasible solution. Hoặc duyệt tất cả để có optimal
+
+Lastest Deadline First(LDF) (1|precedence constraint, sync, non preem|Lmax)
+Task k tuần hoàn - Task có exec time C, deadline D, sơ đồ precedence constraints
+Là thuật toán optimal cho case này khi minimize Lmax
+Cơ chế là xóa dần các node không có child trên cây precedence mà có deadline lớn nhất, thêm vào queue LIFO mà thực hiện. Có lẽ khi bằng cost thì cái nào exec time ngắn hơn thì lấy, dù k thay đổi gì ở Lmax
+
+EDF with precedence constraints (1|precedence constraint, có arrival time, non preem|Lmax)
+Task k tuần hoàn - Task có exec time C, deadline D, sơ đồ precedence constaints, arrival time r
+Là thuật toán optimal. Nếu arrival time = 0 hết vẫn làm được, nhưng khi đó k optimal bằng LDF
+Cơ chế là convert từ precedence constraints sang arrival time và deadline mới bằng 2 công thức, rồi dùng EDF như bth là: rb = max(rb, ra + Ca) khi a->b; Db = min(Db, Da-Ca) khi b->a. Preemp nhảy thoải mái
+
+3) Task tuần hoàn
+Time Scheduling
+Task tuần hoàn - Task có exec time C, deadline D, chu kỳ lặp T
+Là thuật toán bth ít dùng vì phải tìm major cycle, nên chỉ dùng khi major cycle k lớn lắm, các số chia hết đủ đẹp để vẽ
+Để biết có schedulable bằng pp này hay không, phải vẽ thử mới biết được
+Cơ chế là tìm major cycle và minor cycle, sau đó schedule dần các task trong từng minor cycle. 
+
+Earliest Deadline First (EDF)
+Task tuần hoàn, preemp - Task có pha ban đầu, exectime C, chu kỳ lặp T
+Là thuật toán optimal
+Có schedulable hay không: khi và chỉ khi U = Sig(i=1->n)(Ci/Ti) <= 1
+Cơ chế là vẽ sơ đồ ra có pha ban đầu, cứ cái nào deadline gần nhất thì thực hiện thôi, nhảy preemp thoải mái
+
+Rate monotomic (RM)
+Task tuần hoàn, preemp - Task có exec time C, deadline D = chu kỳ lặp T
+Là thuật toán optimal trong các thuật toán có fixed priority (Tức kp chế priority ấy)
+Có schedulable hay không: U > 1 thì chắc chắn k; U <= n(2^(1/n)-1) thì chắc chắn có; PI(i=1->n)(Ui+1)<=2 thì chắc chắn có; Case khác phải vẽ check thủ công
+Cơ chế là vẽ sơ đồ như bth nhưng ưu tiên thực hiện task có chu kỳ lặp nhỏ nhất.
+
+Deadline Monotonic (DM)
+Task tuần hoàn, preemp - Task có exec time C, deadline D, chu kỳ lặp T riêng (T!=D)
+Là thuật toán tìm feasible, dùng khi chỉ yêu cầu tìm feasible, k đủ tốt
+Schedulable khi Ri(số lần x) = Ci + Ii <= Di với Ii = Sig(j=1->i-1)([R(x - 1)/Tj]*Cj) với Ri(0) = C(i)
+Cơ chế là vẽ sơ đồ như bth nhưng ưu tiên thực hiện task có giá trị deadline nhỏ hơn. 
+
+EDF with D < T:
+Task tuần hoàn, preemp - Task có exec time C, deadline D, chu kỳ lặp T riêng
+Là thuật toán tìm feasible solution, dùng khi chỉ yêu cầu tìm feasible, nó mạnh hơn DM vì có case DM k ra mà nó tìm được
+Cách check schedulable: Tìm L* = (Sig(i=1->n)(Ti-Di)*Ui)/(1-U) -> Từ 1 đến L*, lấy L tại các mốc deadline đều phải >= C(0,L) = Sig(([(L-Di)/Ti] + 1)*Ci)
+Cơ chế là vẽ sơ đồ như bth nhưng ưu tiên task có deadline gần vói thời gian hiện tại hơn. Cùng deadline thì cái nào cũng được, k cần switch
+
+
+- Các dạng bài:
+Tìm critical instance: là thời điểm mà release 1 task sẽ cho largest responsetime => vẽ ra đếm
+Tìm Hyperperiod: Bội chung nhỏ nhất của các task period thôi
+Processor utilization factor: U = Sig(i=1->n)(Ci/Ti)
+U > 1 sẽ k thể schedule với mọi thuật toán periodic task
+Upper bound Uub, upper bound min Ulub
+Processor demand: Ci(0,L) = ([(L- Di)/Ti] + 1)*Ci
+Total processor demand: C(0,L) = Sig(i=1->n)(Ci(0,L))
+Tính Lmax là tính L của từng task và lấy 1 giá trị trong đó là max
+
+

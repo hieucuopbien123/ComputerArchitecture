@@ -1,0 +1,42 @@
+Chapter 4: Startup process
+Quá trình load 1 program: Tạo process mới, chuẩn bị memory space và env info, move tới hàm start
+Chạy program đó: Chuẩn bị env, gọi hàm _main
+
+Chạy bằng shell thì parent shell sẽ fork ra child's shell, child's shell gọi hàm execve để load và exec
+Hàm execve exec với argv và env var. => quá trình còn lại trong slide khá đơn giản
+
+
+Chapter 5: System Call
+Là cách phần mềm gọi vào phần cứng
+2 mode
+Systemcall và library function
+Activate system calls -> qua interrupt choose system call handler từ sys_call_table
+Schedule để pause vì systemcall k stop ngay
+setuid -> các bước để gọi thực thi 1 systemcall
+Construct a new system call
+
+
+Chapter 6: DEVICE DRIVER
+Là phần mềm giúp connect thiết bị với máy tính và tương tác với user
+Mỗi thiết bị dược lưu dưới dạng 1 file /dev/device
+Major number xđ device driver, minor number xđ device file cụ thể mà tương tác qua device driver đó
+
+
+Chapter 7: Memory management
+Hệ điều hành đơn nhiệm thì 1 Ct chỉ truy cập bộ nhớ tại 1 thời điểm, đa nhiệm cũng dùng chung kg bộ nhớ nhưng truy cập đồng thời được
+Địa chỉ logic, segmentation thành địa chỉ tuyến tính 32 bit, paging thành địa chỉ vật lý có thể là lên main mem or trỏ tới disk storage
+Quá trình phân đoạn segment 16 bit và offset 32 bit -> slide
+Dựa vào các bit quyền: present bit, read/write/execute bits, user bit để check bảo vệ trang nhớ mỗi khi truy cập
+Tính liên quan tới kích thước bảng phân trang
+Transaction look aside buffer
+Nhiều tiến trình có thể cùng chia sẻ trang nhớ
+
+
+Chapter 8: Virtual file system
+Hệ thống tệp ảo VFS có nhiều loại trong 1 OS
+Sử dụng 1 mô hình thống nhất cho các hệ thống tệp, cung cấp 1 pp truy nhập thống nhất
+Các thành phần của hệ thống tệp
+3 hệ thống tệp điển hình: Unix File System
+
+
+

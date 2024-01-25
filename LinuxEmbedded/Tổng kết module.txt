@@ -1,0 +1,387 @@
+Linux Embedded
+
+
+
+# Basic
+Embedded system là khi giúp build 1 tính năng đb cho system mà hệ thống không thể làm được bằng cách thông thường. VD: cây ATM có thể nhúng CT tương tác được với người dùng
+
+root: / là root node trong cây file của linux
+symbolic link giống shortcut. Nó k trỏ tới 1 block mà trỏ tới relative link tới 1 block khác
+
+Reverse Engineering biến đổi từ ứng dụng thành source code. Nó ám chỉ nhiều kiểu khác, VD phân tích từ chức năng của 1 ứng dụng để tìm ngược lại nguyên lý hoạt động của nó
+
+freeware k là open source nhưng vẫn free để dùng. VD game online
+shareware cung free nhưng trả phí để dùng đủ chức năng
+
+Open source software không phải cứ public source là được, có tận 10 tiêu chuẩn đánh giá 1 ứng dụng là OSS. VD phải có quyền tự do phân phối, source code phải chạy và modify được bởi programmer
+Redhat là nhà cung cấp open source software solution hàng đầu, 1 công ty lớn
+Software copyright để chứng minh ai là người đóng góp cho sản phẩm, OSS cũng có để tránh tình trạng giả mạo tác giả. Còn software license là 1 contract hợp pháp chứng thực cho việc sử dụng và redistribution of software.
+
+Copyleft là 1 thể loại hợp license aggreement đảm bảo user dùng, chỉnh sửa, phân phối các version khác vẫn phải tuân thủ hợp đồng cũ. Để tránh 1 người chỉnh sửa và bắt người dùng khác phải trả phí cho version của họ
+
+1 vài OSS licenses như Apache license k có copyleft, GNU có 3 versions khác nhau, BSD license yêu cầu các bản phân phối phải giữ license như cũ có 4 phiên bản,..
+
+Có 2 loại development model cho OSS: Cathedral là kiểu truyền thống và chỉ nhóm developer riêng được code; Bazaar là kiểu user cũng có thể là developer luôn
+
+-> Reset password: vào App & Feature -> Ubuntu -> Advanced Options -> Reset -> Mở ubuntu
+
+
+
+# Linux Basic
+Kernel làm mọi thứ, quản lý core, phần cứng, cung abstraction cho app
+Old: x.y.z là version x.y với lần release thứ z
+New: x.y.z.a thêm a là stablization increment
+
+Linux kế thừa các thuộc tính của unix
+
+Vài distribution phổ biến:
+Debian là hđh dựa trên linux, ubuntu là hđh xây dựa trên Debian được tối ưu hóa cho máy bàn và máy chủ server. Có nhiều phiên bản khác của linux như centOS, Fedora,...
+
+-> Cấu trúc thư mục
+/ (root directory)
+◦ /bin : essential user binaries
+◦ /boot : static boot files the OS needs in order to boot
+◦ /etc : contains all configuration files of the system or in its sub- directories
+◦ /dev : where all your devices live: keyboard, mouse, printer, disk, 
+partition.
+◦ /home : contains a home folder for each user => dùng ~ để trỏ vàos
+◦ /lib : contains libraries needed by the essential binaries in the /bin and /sbin
+◦ /usr : contains applications and files used by users, as opposed to applications and files used by the system
+◦ /var : is the writable counterpart to the /usr directory
+◦ /proc: special files that represent system and process information
+
+-> Command linux
+ref tới Slides
+ref tới BT
+
+Wildcard characters:
+* >= 0
+? = 1
+[A-Z] và [!abc]
+VD: ls -l *prog => liệt kê dạng long lít cho mọi file kết thúc với prog
+
+cp mv rm ln find grep tar gzip whoami chmod umask chown chgrp 
+grep có thể kết hợp với pipeline |, thực tế các lệnh nào nhận input đều có thể dùng pipeline để lấy output từ command khác
+
+-> File system:
+Có nhiều kiểu file => ref tới slide
+File ẩn bắt đầu bằng dấu chấm
+
+cat more tail head touch echo
+ls | tee -a output.txt => tee command khiến câu lẹnh vừa ghi ra terminal, vừa ghi vào file. -a là append tiếp vào file
+
+inode hay index node là thứ mô tả hệ thống file. Nội dung file luôn nằm trong data block, blank file chỉ có inode mà k có data blocks.
+
+Hard link là direct ref thông qua inode. Tạo bằng command ln. Mỗi file luôn có ít nhất hai hardlink trỏ tới, khi xóa file tương đương xóa hét hardlink và inode cũng bị xóa theo
+Tạo một symbolic link là tạo một inode mới chỉ chứa path với ref object
+
+-> Account group and permission
+ref tới Slides
+
+Owner của file mặc định là người tạo file và group owner là primary group của người tạo file => owner giúp xđ quyền hạn của user với file
+
+Mỗi user luôn thuộc về ít nhất 1 group vì nó là thứ quản lý quyền của user
+
+/etc/sudo.conf chứa config về lẹnh sudo
+/etc/sudoers xđ user nào được exec sudo command
+
+-> Kill -9 -1 kill => tất cả process trừ tiến trình init là -1
+
+Command xclock hiển thị đồng hồ k làm dược trên wsl2, xcalc hiển thị giao diện máy tính k làm được trên wsl2
+
+Truyền tin giữa các terminal:
+echo "Message" 1> pts/1 => 1> thì 1 là file descriptor của output stream
+2 terminal đều phải là root user => nếu k sẽ bị lỗi permission denied bên gửi, message disabled bên nhận
+
+-> Lệnh qtr thao tác với người dùng:
+Có nhiều loại người dùng:
+system user: được tạo tự động trên linux để chạy các dịch vụ và ứng dụng
+người dùng thường xuyên: người dùng đăng nhập bth, có thể có quyền hoặc k có quyền truy cập các thành phân hệ thống
+super user: admin hoặc người dùng thao tác các tác vụ cấp cao có thể gây nguy hiểm cho hệ thống
+
+Xem người dùng hiện tại:
+whoami
+getent passwd => list mọi user
+
+Đổi sang người dùng khác:
+su - <tên người dùng>
+sudo -i hoặc sudo su => đổi sang root user
+=> Muốn đổi sang người dùng khác, phải biết password của họ, k set password thì vào thoải mái
+
+
+
+# Process
+ref tới slides
+
+Process có 4 state:
+Z state => zombie state có thể tạo ra bởi programmer do lỗi or do cố ý. Kết thúc nhưng vẫn ở đó và vẫn ngốn bộ nhớ, vẫn có trong process table. 
+VD: khi child process exit trước parent nhưng parent không xử lý child exit status đúng
+
+Có system process và user process
+
+Command: ps kill kill all
+nice chỉnh priority
+renice chỉnh priority sau khi start process
+top hiện và update info of current process
+
+Foreground chạy child process và k thể tương tác với parent process, chạy xong phải wake up parent process
+Background chạy child process ở nền và có thể tương tác với parent process. VD emacs
+
+Job/task liên quan đến 1 group of process
+
+-> Run multiple process: 
+a;b nếu a fail, b vẫn thực hiện rất nguy hiểm
+a && b thì k
+a || b thì b chỉ thực hiện khi a hoàn thành và k lỗi
+a | b thì output của a là input của b trong pipeline
+
+
+
+# Network management
+Thư mục etc chứa thông tin về network
+=> ref tới process and network
+
+
+
+# Embedded system
+Input -> Processor -> ouput
+             |
+           Memory
+Firmware là 1 loại software được nhúng vào phần cứng như microcontroller để điều khiển hành vi. Thg được viết bằng low level programming lang như C or assembly. Nó khác với các phần mềm thông thường vì thg chỉ perform các action phục vụ mục đích đặc biệt
+
+Processor là vi xử lý thông thường, phải kết hợp với IO devices và memory để thực hiện task
+Micro processor được dùng cho các con IC, chip
+Micro controller thg dùng cho các hệ thống nhúng. Nó chứa cả micro processor, memory, IO port
+
+Memory -> RAM -> SRAM DRAM
+       -> ROM -> EPROM PROM Masked
+       -> Hybrid -> Flash => thg dùng trong hệ thống nhúng
+
+-> Kiến trúc máy tính Von Neumann
+Cũng chỉ là: memory tổ chức thành 1 mảng tuyến tính để CPU đọc và ghi data, instruction vào đó. Nó k phân biệt giữa instruction và data, memory đều lưu hết.
+
+-> SoC(System on chip) là 1 mạch IC tích hợp mọi phần tử của 1 computer hoặc 1 hệ thống điện trong 1 con chip
+Linux là OS nên rất tiện cho phát triển, để làm hệ thống nhúng với linux, máy cũng phải có đủ tiêu chuẩn về chip, RAM, bộ nhớ, network support, nền tảng phần cứng phù hợp. 
+Phần cứng phải hỗ trợ linux kernel, có bootloader opensource. Nên dùng solution tự làm, dùng của các vendor có thể có các tool k free.
+
+Target máy đích có thể chỉ là 1 con chip MIPS or ARM trong hệ thống để phát triển hệ thống nhúng chạy trên nó. Rồi nhét nó vào máy giặt chẳng hạn
+
+
+
+# Linux for embedded system
+-> Architecture
+Host: chứa cross-compilation toolchain để phát triển hệ thống cho target, là 1 PC powerful
+Target: máy đích chạy hệ thống nhúng phải có phần cứng phù hợp:
+  Bootloader: khởi chạy hệ thống, dùng cho basic init, loading, exec kernel
+  Linux kernel: chứa process và memoy management, network stack, device driver, services
+  C lib: interface giữa kernel và user space app. User tương tác kernel qua lib chứ k tương tác trực tiếp
+  Lib and app: ứng dụng nhúng để sử dụng
+
+-> Install software from source code: tải source -> install đủ package -> install software bằng scipt -> config bằng script -> remove software bằng script => tất cả có thể nhset vào 1 makefile or automake,...
+
+Tùy hđh có nhiều tool để manage, cài dặt software, trong Debian thì phổ biến nhất là apt-* => apt tương đương với yum của Redhat
+apt-get install/download/remove/source app
+apt-get clean
+apt-get update/upgrade
+
+apt là subset của apt-get or apt-cache
+
+-> Toolchain
+Thường thì native tool chain có sẵn là x86 trong linux distribution. Nhưng native tool chain chỉ xây cho hệ thống cùng loại. VD: máy x86 dùng native tool chain để xây ra x86 binary chạy trên 1 máy x86 khác thì ok, nếu máy đích là ARM cơ thì không được mà phải dùng cross-compiling toolchain để build ra ARM binary chạy trên máy khác. 
+Máy x86 ___ native toolchain ____________ x86 binary chạy trên x86
+        ___ cross compiling toolchain ___ ARM binary chạy trên ARM
+
+Kiến trúc có 3 máy: máy build, máy host, máy target. Loại thường dùng nhất là build và host cùng 1 máy, còn máy target là loại khác (gọi là cross build)
+Còn canadian cross build là loại cả 3 máy khác nhau cơ. 
+Do đó để lập trình hệ thống nhúng, ta chỉ cần quan tâm tới toolchain trên máy host.
+
+Cross compilation toochain có các components: Bitutils, Kernel headers, C compiler, C lib, GDB debugger(optional)
+
+Để có 1 toolchain, ta có thể build manually or dùng 1 pre-compiled toolchain. Nó có thể packaged ngay trong distribution or dùng các free tool trên mạng
+Option hay nhất là dùng các utilities để automate quá trình build. Nó có thêm nhiều config để tự động sẵn quá trình mà ta chỉ cần chạy đơn giản như buildroot, Yocto, crosstool-ng
+
+
+
+# Emulator Simulator
+- Emulated env: tạo bản sao như thiết bị thật trên máy để testing trên env trước khi nhúng vào thiết bị thật vì nó rất mất tg để debug và chạy ngay trên thiết bị thật
+VD: giả lập môi trường game PS4 trên máy tính, giúp máy tính hoạt động như PS4 để chơi được các game trên PS4. Những gì PS4 làm được, máy tính cũng phải làm được
+- Simulator: mô phỏng tương tự nhưng k giống bản gốc hoàn toàn, performance chậm hơn emulator.
+- Virtualization: tạo 1 môi trường ảo, VD chạy linux trên window. Nó như 1 phiên bản nâng cấp của emulator.
+
+Tức bth: App -> OS -> hardware
+Virtualization:
+App -> OS -> |                                          |
+App -> OS -> |Virtualization layer: [hypervisor|host OS]| -> Hardware
+App -> OS -> |                                          |
+
+-> Máy ảo VMWare, Oracle VirtualBox => k designed for embedded system
+Kernel based VM => nên dùng hơn: nó ảo hóa cho phép linux kernel chạy như 1 hypervisor. VD: QEMU vì nó free, native linux, emulate machine's processor. Có thể cài QEMU như 1 software bth trên linux. 
+Tức là để cần lập trình hệ thống nhúng bằng linux thì cần phải mô phỏng môi trường của hệ thống thực cần dùng, r cài nó trên máy linux. Ở đây ta éo có máy linux. Tức ta phải dùng máy ảo chạy linux, rồi lại chạy máy ảo trên máy ảo linux để tạo môi trường cho hệ thống thực tế. VD lập trình nhúng cho máy giặt chẳng hạn thì phải mô phỏng máy giặt đó trên máy tính linux.
+
+
+
+# Boot Linux system
+MBR (Master boot record) là 1 phần trong máy tính để khởi động máy và xác định cách mà ổ đĩa được phân vùng. MBR nằm ở đầu ổ đĩa (first sector) và lưu trong 1 phần riêng biệt gọi là boot sector, nằm ngoài parition table 
+Khi khởi động máy: bootloader của MBR được nạp vào bộ nhớ và chạy đầu tien -> Bootloader là 1 small program sẽ check partition table để xác định phần chứa OS để chuyển quyền kiểm soát cho nó tiếp tục khởi động.
+
+Chạy 1 OS khác trên OS window. Mỗi partition chạy được maximum 1 OS. Nếu muốn có 3 OS, phải chạy trên 3 partition. Mỗi partition có boot record riêng chứa script để chạy OS trong partition đó. 
+Hệ điều hành ngày xưa chỉ có 1 bootloader, bh bootloader có tới 2 stage. Mỗi partition khi chạy 1 OS phải chạy 1 bootloader độc lập. Có nhiều loại bootloader: LiLo, Grub
+
+Run levels: sau khi tải xong OS phải thực hiện thêm các task khác. Các task được chia thành nh mức run levels khác nhau tùy vào hđh
+Startup    -> | INIT -> Run levels
+Init level -> |
+Để init nó dùng /etc/inittab nhưng hiện tại k thể tìm thấy file etc/init vì hầu hết các hđh đã bỏ init/initab vì nó muốn start multiple thing cùng lúc thay vì chờ cái này xong mới chạy tiếp. Đó là các giải pháp replacement như Upstart, Epoch, Mudar, và phổ biến nhất là systemd thay vì dùng init/inittab bth.
+
+Systemd nhóm các services lại thành các targets. Mỗi target (có nhiều services) được coi là 1 OS state và các services chỉ chạy phụ thuộc vào OS state đó là gì. VD OS state là như nào thì các services nào được chạy. 
+Có thể tạo 1 service mới từ systemd => nó giống kiểu window services chạy trong background từng tạo với qt, thì ở đây là linux services.
+
+-> systemd
+Trong wsl2, systemd k được bật mặc định vì nếu bật sẽ có rất nhiều task nền chạy và tăng thời gian khởi động của wsl2. Để bật systemd trong wsl2:
+wsl ~ 
+sudo -e /etc/wsl.conf
+Thêm vào file:
+```
+[boot]
+systemd=true
+```
+wsl --shutdown => để restart lại wsl
+sudo systemctl status
+=> Đôi khi cách này k fix được, có systemd=true trong file nhưng vẫn bị lỗi
+
+Cách fix khác:
+sudo su => luôn dùng root user
+apt update
+apt upgrade -y
+=> Thử lại, nếu chưa được thì chạy tiếp:
+wget https://github.com/arkane-systems/genie/releases/download/v2.5/systemd-genie_2.5_amd64.deb
+sudo apt install -y daemonize python3-pip python3-psutil systemd-container
+sudo dpkg -i systemd-genie_2.5_amd64.deb
+genie -s => mỗi lần vào phải chạy lại lệnh này để start systemd => systemd trên wsl2 sida lắm
+
+systemd k có trong docker vì docker không phải 1 ứng dụng xây dựng OS ảo mà là 1 ứng dụng giúp độc lập process ứng dụng trong từng container. Các ứng dụng phải chạy ở foreground. 
+
+-> Để chạy được các task background dạng linux service như httpd apache, phải chạy systemd trước
+
+-> 1 computer connect vào 1 computer khác
+--> 1 computer có thể access vào 1 computer khác dù cùng mạng hay connect qua internet. Nhưng config sẽ phức tạp
+VD: team viewer là 1 ứng dụng đã đơn giản các step để connect giữa 2 máy
+Ta có thể làm thủ công (k chắc còn hoạt động): https://www.anyviewer.com/how-to/access-another-computer-through-ip-address-0007.html
+
+--> 1 computer có thể tương tác với computer khác qua port
+Vd ta tạo ra 1 webserver trên máy mở cổng 80, ta muốn các máy tính khác truy cập vào webserver ta cung cấp
+1) 2 máy cùng mạng LAN
+2 máy cùng mạng LAN mặc định có thể truy cập thông qua local ip address v4 gõ trực tiếp vào browser. Nhưng đôi khi k hoạt động nếu máy có cài các trình bảo mật. Tối thiểu phải làm vài thứ ở máy server:
+Window + R -> sysdm.cpl -> Remote tab -> Allow remote connections to this computer
+Allow firewall cho máy bên ngoài access vào cổng của server, hoặc tắt hẳn firewall đi
+Còn nhiều options khác vì config mỗi máy có thể khác nhau
+
+2) 2 máy khác mạng
+Phải config thêm router LAN ra ngoài
+=> 2 máy truy cập được thông qua IP address trực tiếp
+
+Có thể config DNS để có tên miền
+1) Public DNS thì máy server phải đăng ký tên miền global point vào ip address cố định của server, mất phí.
+2) Local DNS: chỉ có tác dụng với máy ta chỉnh
+Ở máy muốn connect vào server, ta tìm trong host file "/etc/hosts" của linux và C:\Windows\System32\drivers\etc\hosts của window rồi set ánh xạ từ ip của server vào domain muốn hiển thị thì mỗi khi máy ta vào ip nào sẽ tự hiện domain name nào. Nếu có domain đó tương tự ngoài internet thì cái này sẽ ghi đè ưu tiên trong đây.
+
+
+
+# Linux kernel
+Application -> Linux kernel -> Hardware
+Để tương tác với các thiết bị phần cứng phải có driver. Trong các máy hiện đại có sẵn driver của các thiết bị thông dụng. Nhưng khi perform các tính năng nâng cao, vẫn phải cài thêm driver các thiết bị chuyên dụng.
+
+User space dù k có quyền sửa nhưng vẫn nhìn thấy system và thông tin kernel nhờ pseudo filesystems. Pseudo filesystem or virtual filesystem khiến app nhìn được các file và thư mục k tồn tại trong bộ nhớ thực. Có 2 loại là /proc có info về process và memory, /sys có info về devices và bus
+
+Linux kernel source có nhiều bản của bên thứ ba or community. Linux kernel được viết bằng C, build bằng lệnh make bth.
+Kích thước của kernel nhỏ nhưng linux source lại rất lớn vì source code của linux chứa cả kernel và các file làm các tính năng của driver, filesystem, netowrking protocol, security modules và nhiều components khác tạo nên hđh
+Để build kernel, phải viết config rồi build. Kernel image là 1 file duy nhất sau khi link tất cả các object file enable mọi features trong file config mà ta muốn. Trong đó, có nhiều features có thể compile độc lập như là module, các feature đó có thể add or remove khỏi kernel tùy ý. Mỗi module được lưu trong 1 file riêng nên để dùng được, buộc phải access được vào file, trong giai đoạn early boot của kernel k thể thêm được các feature đó vì chưa access được filesystem.
+
+Để sửa file config, dùng các tool như gconfig, xconfig, menuconfig, nconfig, oldconfig.
+
+
+
+# Linux file system
+1 Physical disk có thể chia thành nhiều partition và OS dùng các partition như là logical disk. Linux manage partition như file biểu diễn bằng dev/XY với X là tên disk, Y là lượng partition trong disk đó. 
+
+OS quản lý data lưu bằng NTFS, EXT2, EXT3,...
+NTFS là file system của window nhưng bản Linux kernel mới có thể đọc được. 
+EXT2,3,4 là extended file system của linux
+
+Structure của disk:
+Master boot record - Primary partition[Boot sector, Data] - Extended partition[Boot sector, Data, unused boot sector]
+
+Command: 
+mkfs tạo file system mới
+mk2fs để tạo ext2 file system
+mount => dùng để mount 1 file system vào 1 directory trong directory tree structure
+fdisk => tạo partition mới
+df hiển thị thông tin đĩa
+dd sẽ copy từ 1 đĩa vào đĩa khác, nó copy ở low level theo từng block rất nhanh
+du tổng hợp lưu lượng sử dụng đĩa
+
+-> Virtual memory
+Là mem trên harddisk được sử dụng khi main mem k đủ. Nó là 1 partition riêng trong linux và được tạo khi cài OS. 
+Lệnh mkswap để dùng partition như là VM
+
+-> Disk fragmentation
+Internal defragmentation: mem bị chia thành các khối block liên tiếp nhau, size của block lớn hơn size cần dùng vì sẽ cần mở rộng thêm
+Block1[phần đã dùng, phần chưa dùng] - block2[phần đã dùng, phần chưa dùng] - ...
+
+External defragmentation: Process được lưu vào các block khác nhau của đĩa nên mỗi khi chạy cần nhiều thời gian hơn để nó đọc tất cả các file liên quan và tổng hợp lại data cuối cần dùng
+
+-> Trong linux còn có Quota mode là ché độ cho phép admin set limit cho lượng disk space và số lượng file 1 user có thể sử dụng trong hệ thống. 
+
+
+
+# Project dựng 1 webserver trên busybox
+CGI (Common Gateway Interface) là một giao diện tiêu chuẩn được sử dụng để tạo kết nối giữa một trang web và các ứng dụng máy chủ để thực hiện các tác vụ động trên web. CGI script là một đoạn mã chương trình thực thi trên máy chủ web thông qua giao diện CGI. Khi một trình duyệt web gửi yêu cầu cho một trang web chứa CGI script, máy chủ sẽ chạy CGI script đó và trả về kết quả cho trình duyệt web. Nó có thể perform các action phức tạp như gửi file, authentication hay làm các thứ như apache server, nhưng code phức tạp.
+
+CGI script thường được viết bằng các ngôn ngữ lập trình như Perl, Python, Ruby hoặc C/C++. Khi được thực thi, CGI script có thể thực hiện các tác vụ như xử lý dữ liệu nhập vào từ người dùng, truy xuất cơ sở dữ liệu, gửi email, tạo và xử lý biểu mẫu, tạo động nội dung trang web, và nhiều công việc khác.
+
+CGI script đã từng là một phương pháp phổ biến để tạo ra các trang web động, nhưng hiện nay đã có nhiều công nghệ khác như PHP, ASP.NET, Node.js thay thế trong việc xây dựng ứng dụng web động. Tuy nhiên, CGI script vẫn được sử dụng trong một số trường hợp đặc biệt hoặc khi cần tích hợp với hệ thống máy chủ hiện có. 
+
+-> Init file to mount file system:
+Để build minimal linux system có 2 bước: 1 là xây kernel image là config cơ bản cần thiết để khởi động hđh, 2 là xây disk image chứa các tệp hđh thư viện chương trình ứng dụng. Disk image được sử dụng để truy cập và quản lý tài nguyên hệ thống.
+
+Đầu tiên gắn hệ thống tệp proc vào 1 thư mục gốc /proc trong hệ thống tệp gốc của linux => tệp proc chứa thông tin về process và tài nguyên hệ thống
+
+Mount sysfs filesytem vào /sys directory => tương tự nhưng sysfs chứa thông tin về phần cứng và cấu hình hệ thống.
+
+mknod /dev/ttyS0 c 4 64 => mknod để tạo 1 device file, file này cung 1 interface cho device driver để phần mềm có thể tương tác với device driver dùng standard input/output. Ở đây tạo 1 thiết bị nối tiếp (serial device) tên là ttyS0 với loại c (character device file). Character devices cung 1 stream of data mà đọc được từng ký tự at a time, nó ngược với block device là thao tác với block of data. Các thiết bị nối tiếp thường để giao tiếp với các thiết bị ngoại vi như cổng COM. 4 là major number của device file, nó nối với kernel xem device driver nào được dùng cho device file, major number 4 thg được dùng cho tty devices. 64 là minor number, nó được dùng để phân biệt giữa các devices mà devices driver quản lý, ở đây 64 biểu diễn cho device file là /dev/ttyS0
+=> Cái mknod cần thiết nếu trong hđh, user tương tác với input output qua peripheral device.
+
+setsid sh -c 'exec sh </dev/ttyS0 >/dev/ttyS0 2>&1 => setsid để chạy chương trình trong 1 session mới, tách program khỏi terminal hiện tại và tiếp tục chạy dù ta đã close terminal hiện tại; sh -c sẽ thực thi câu lệnh trong đoạn string tiếp theo ở session mới; exec sh </dev/ttyS0 >/ttyS0 2>&1 thì exec sẽ thay thế shell process hiện tại bằng 1 instance mới, sh là shell sẽ execute mới sẽ chạy, </dev/ttyS0 sẽ chuyển hướng input của sh shell tới device file /dev/ttyS0. >/ttyS0 sẽ redirect output của sh shell tới /ttyS0 (1 serial port device). 2>&1 sẽ redirect error output của sh shell tới cùng địa chỉ với output bth là /ttyS0
+
+-> Build minimal linux command:
+sudo qemu-system-x86_64 -kernel bzImage -initrd initrd.img -nographic
+=> Sau khi cài qemu, ta chạy máy ảo QEMU trên hđh linux. Ta emulate 1 full system x86 64 bits linux với kernel image là file bzImage và file initrd.img xác định RAM disk để sử dụng cho kernel. Nó là tệp hệ thống tạm thời được sử dụng trong quá trình boot, qtr boot sẽ dựa vào nó để tiếp tục tạo ra tệp hệ thống root của hđh.
+
+-> Init file cho networking: 
+ifconfig eth0 10.0.2.55 up => Có nhiều giao diện mạng khác nhau, eth0 là giao diện mạng ethernet đầu tiên. Ta cấu hình giao diện này với địa chỉ 10.0.2.55. up là tham số để kích hoạt, giao diện mạng có thể gửi và nhận dữ liệu.
+10.0.2 là private ip address space. Server và client trong môi trường độc lập có private ip address riêng thì ta đang gán để chúng tương tác với nhau. 
+
+sudo qemu-system-x86_64 -kernel bzImage -initrd initrd.img -nographic -net nic -net tap,ifname=tap0
+Lệnh tương tự để xây linux system; -net nic để tạo ra 1 card mảng ảo vào máy ảo QEMU, giúp cho máy ảo có thể kết nối mạng.
+-net tap,ifname=tap0 => Kết nối mạng card ảo với giao diện tap trong hệ thống host. Máy ảo --- Card mạng ảo --- Giao diện tap --- Mạng vật lý hệ thống host.
+
+-> Init file để start httpd server:
+httpd -p 8080 -h /home/BusyBoxWebServer/ -c /home/Config/httpd.conf
+=> Chạy server ở port 8080, host mọi file trong thư mục kia với config file trong kia.
+
+-> Script list file:
+    file_modified=$(busybox stat -c %y "$file")
+    file_modified=$(echo "$file_modified" | sed 's/\.0*$//')
+=> Lấy thời gian last modified của file và cho qua pipeline sed để remove trailling .0 trong string
+
+Cụ thể duyệt từng file trong folder và in ra thông tin. Kèm các button edit, download là ấn vào sẽ gọi tới các script .sh khác thôi
+
+Script search file:
+Chính là search trong listfile
+
+Script rename file:
+Lấy path mới và path cũ ra rồi gọi lệnh mv cơ bản
+
+Script create folder: 
+Lệnh fetch để chạy script .sh nào
+Gọi mkdir thôi
+

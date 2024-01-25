@@ -1,0 +1,323 @@
+Bài 0:
+Executable code là kết quả của 2 qtr compile và linking:
+Source code -> Compiler -> [token -> senmatic -> parser tree -> intermediate code -> tối ưu -> assembly] -> assembler convert assembly thành object file -> Object program là mã máy -> Linker thêm các libraries -> executable -> loader -> executable (main memory) -> machine (nhận input từ ng dùng nx) -> chương trình cần gọi vào hệ thống [usermode -> kernel mode] -> system call -> OS[process, file, memory, network, device driver -> hardware] -> trả lại kết quả cho machine -> output
+
+Ví dụ về kích hoạt device drivers:
+Program A request device function bằng cách gọi vào device driver
+Device Driver extract command từ request và gửi tới thiết bị thực
+Thiết bị thực xử lý và gửi lại data cho driver
+Driver invoke routine để báo cho Program A biết là data đã available
+
+
+
+MS-DOS COM:
+0x0100
+program code và data chung 
+Không chứa gì khác ngoài program code và data
+append chung vào free memory khi có nh program
+Address load program k cố định
+64KB mem limit
+
+MS-DOS EXE: 
+0x0000
+Chứa relocation table để thay đổi sang address khi compile
+Address load k xác định
+Bộ nhớ lớn hơn 64KB
+
+a.out NMAGIC:
+Chứa cả relocation table, name table, symbol table
+Program data data sắp xếp độc lập, có thẻ share giữa các program
+Address load program xác định vì hỗ trợ virtual memory mode
+Vẫn chưa hỗ trợ dynamic link, OOL
+
+Mở rộng thành:
+ZMAGIC: format in page
+QMAGIC: remove redundancy
+
+ELF:
+hỗ trợ hết
+
+
+
+Bài 1:
+Giải thích EFLAGS register:
+EFLAGS : this register contains a status flag.
+8 80-bit registers of float ST(0)-ST(7)
+8 64-bit registers for MMX
+8 128-bit XMM registers (Used for SSE)
+
+These are various types of registers used in x86 architecture CPUs:
+1. EFLAGS: This is a 32-bit register used as a collection of bits representing Boolean values to store the results of operations and the state of the processor. It includes status flags, control flags, and system flags. Status flags reflect the result of CPU operations, for example, the Zero Flag (ZF) is set to 1 when an operation results in a zero value.
+2. 80-bit registers of float ST(0)-ST(7): These are part of the x87 FPU (Floating-Point Unit) register stack. They are used to perform high-precision mathematical operations (like floating-point arithmetic). ST(0) to ST(7) are eight 80-bit registers used as a stack.
+3. 64-bit registers for MMX: MMX (MultiMedia eXtensions) technology introduced eight 64-bit registers named MM0 to MM7. These registers are aliases for the existing x87 FPU stack registers. MMX was designed for performing SIMD (Single Instruction, Multiple Data) operations for multimedia, such as video.
+4. 128-bit XMM registers: These are used for SSE (Streaming SIMD Extensions), which is another SIMD instruction set extension to the x86 architecture, introduced by Intel. The XMM registers are used for storing multiple integer and floating-point values and are used in multimedia, scientific, and 3D applications that require high-performance computations. There are 8 XMM registers (XMM0 to XMM7) in the original SSE implementation, and this was extended to 16 registers (XMM0 to XMM15) in later versions of the architecture.
+
+***Các câu lệnh assembly cơ bản:
+EDX là Extended data Register dược dùng lưu trữ bit cao trong kết quả phép nhân hoặc chia
+EAX là Extended accumulator register dùng lưu bit thấp trong kết quả phép nhân hoặc chia, là kết quả thực sự của phép tính. Lưu kết quả trả về của function luôn
+EBP là một thanh ghi (register) trong kiến trúc x86. Nó là viết tắt của "Extended Base Pointer" và còn được gọi là "EBP register" hoặc "Base Pointer register". EBP được sử dụng trong quá trình thiết lập và quản lý khung ngăn xếp (stack frame) trong các thủ tục và hàm. Nó lưu trữ địa chỉ cơ sở (base address) của khung ngăn xếp hiện tại, cho phép truy cập dễ dàng đến các biến cục bộ và tham số của thủ tục hoặc hàm.
+EBP cũng thường được sử dụng để truy cập các tham số của thủ tục hoặc hàm thông qua các địa chỉ tương đối (offset) từ EBP. Nó cung cấp một cách tiếp cận tương đối và ổn định đến các biến cục bộ và tham số, đồng thời giúp đơn giản hóa việc quản lý khung ngăn xếp trong quá trình thực thi chương trình.
+
+IDIV tương tự DIV nhưng là có dấu
+NEG là nghịch đảo rồi thêm + 1 (bù 2), NOT là chỉ nghịch đảo
+CMP thực hiện một phép trừ giữa hai toán hạng nhưng không lưu kết quả, chỉ cập nhật các cờ (flags). Nếu hai toán hạng bằng nhau, lệnh CMP sẽ set các cờ sau:
+- Zero Flag (ZF): Được set (1) nếu kết quả là 0, tức là hai toán hạng bằng nhau.
+- Carry Flag (CF): Được set (1) nếu có một borrow từ bit cao nhất trong quá trình trừ. Trong trường hợp này, nó sẽ không được set vì hai toán hạng bằng nhau.
+- Overflow Flag (OF): Được set (1) nếu có một overflow từ bit cao nhất. Trong trường hợp này, nó cũng sẽ không được set vì không có overflow khi hai toán hạng bằng nhau.
+- Sign Flag (SF): Được set (1) nếu bit cao nhất (bit dấu) của kết quả là 1, tức là kết quả là một số âm. Trong trường hợp này, nó sẽ không được set vì kết quả là 0.
+TEST instruction trong assembly x86 thực hiện AND và set giá trị cho 3 cờ sau:
+1. Zero Flag (ZF): The Zero Flag is set if the result of the AND operation is zero. This indicates that all the corresponding bits in the operands were clear (0).
+2. Sign Flag (SF): The Sign Flag is set based on the most significant bit (MSB) of the result. If the MSB is 1, indicating a negative result, the Sign Flag is set.
+3. Parity Flag (PF): The Parity Flag is set if the result has an even number of set (1) bits. It indicates the parity (evenness or oddness) of the result.
+
+The JMP instruction is an unconditional jump instruction that transfers program control to the specified label unconditionally. It does not depend on any specific flag condition.
+The JE (Jump if Equal) instruction jumps to the specified label if the Zero Flag (ZF) is set, indicating that the previous comparison or operation resulted in an equality condition.
+The JL (Jump if Less) instruction jumps to the specified label if the Sign Flag (SF) is set, indicating that the previous comparison or operation resulted in a negative (less than) condition.
+The JG (Jump if Greater) instruction jumps to the specified label if the Zero Flag (ZF) is clear and the Sign Flag (SF) is clear, indicating that the previous comparison or operation resulted in a positive (greater than) condition.
+The JNE (Jump if Not Equal) instruction jumps to the specified label if the Zero Flag (ZF) is clear, indicating that the previous comparison or operation resulted in a non-equality condition.
+The JGE (Jump if Greater or Equal) instruction jumps to the specified label if the Sign Flag (SF) is clear, indicating that the previous comparison or operation resulted in a non-negative (greater than or equal) condition.
+The JLE (Jump if Less or Equal) instruction jumps to the specified label if either the Zero Flag (ZF) is set or the Sign Flag (SF) is set, indicating that the previous comparison or operation resulted in a non-positive (less than or equal) condition.
+=> Do đó nó thường dùng sau TEST và CMP để chạy theo kết quả của 2 instruction này
+
+1. PUSHAD (Push All Registers): Lệnh PUSHAD được sử dụng để lưu trữ giá trị của tất cả các thanh ghi thông qua việc đẩy chúng vào ngăn xếp (stack). Các thanh ghi được lưu trữ theo thứ tự sau: EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI. Lệnh PUSHAD giúp lưu trữ trạng thái của các thanh ghi để sau đó có thể khôi phục chúng sau khi hoàn thành một hoạt động quan trọng.
+2. POPAD (Pop All Registers): Lệnh POPAD được sử dụng để khôi phục giá trị của tất cả các thanh ghi từ ngăn xếp (stack) vào các thanh ghi tương ứng. Các thanh ghi được khôi phục theo thứ tự ngược với lệnh PUSHAD: EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX. Lệnh POPAD giúp khôi phục trạng thái ban đầu của các thanh ghi sau khi đã lưu trữ chúng bằng lệnh PUSHAD.
+
+Lệnh CALL <memory/register/global offset> sẽ chuyển control tới address nào để thực hiện tiếp (1 label or điểm start của 1 function). Và nó push address của instruction tiếp theo dưới lệnh call vào stack. Function được gọi khi thực hiện xong chỉ cần dùng RET instruction để lấy address dưới lệnh call trong stack ra và thực hiện tiếp từ đó. 
+
+Memory Management mode
+- Real address mode: segment << 4 + offset
+- Flat memory mode: k chia thanfh segment
+- Addressing mode:
+1 => là địa chỉ 0x00000001 ở 8 bits
+$1 => là giá trị số 1
+
+GNU assembler
+1 assembly program trước khi được assembler xử lý thì nó ở dạng intermediate code, nó chứa mọi thông tin về chương trình. Gồm instruction và pseudo-instruction: Instruction là lệnh của CPU thực hiện, pseudo-instruction là thứ hỗ trợ assembler sinh object code
+
+***VD gọi cdecl đệ quy:
+f: 
+push %ebp
+movl %esp, %ebp
+sub $12, %esp
+cmpl 16(%ebp), $0
+jne L1
+movl 8(%esp), %eax
+jmp L2
+L1:
+movl 16(%ebp),%eax
+subl 1, %eax
+movl 12(%ebp), %ecx
+movl 8(%ebp), %edx
+addl %ecx, %edx
+push %eax
+push %ecx
+push %edx
+call f
+addl $12,%esp
+L2:
+leave
+ret
+
+enter / leave
+call / ret
+VD lệnh leave tương đương với:
+movl %ebp, %esp
+popl %ebp
+
+Stack and stack frame:
+Stack lưu temporary data, LIFO, lưu ở high address area. %esp luôn gắn với top of stack.
+Stack frame hay còn gọi là activation record là phần stack mà dùng để thực hiện 1 subrouting nào đó. Bản chất là %ebp lưu address gốc của caller. Trong trường hợp subroutine lồng nhau, thông tin %ebp sẽ lưu vào stack và %ebp tiếp tục lưu caller của subroutine mới nhất đang thực hiện.
+
+Thứ tự call routine (tất cả đều 4 bytes): lưu params -> lưu return address -> lưu ebp -> trừ esp -> nội dung hàm 
+
+
+Bài 2: 
+Có 3 loại object file: có thể load và execute được luôn; có thể link và vẫn chưa symbol (chưa hoàn toàn là mã máy); dạng thư viện có thể load vào ct khác.
+Symbol trong 1 object file đại diện cho các tên mà compiler or linker cần biết để hoàn thành qtr biên dịch và liên kết. Nó đại diện cho biến, hằng số, hàm trong mã nguồn
+
+Memory management trong loại CPU sơ khai nhất - 8086:
+8086 processor dùng 16 bit register lưu address và chỉ dùng được max 64KB memory, đây là loại register sơ khai đầu tiên. Nếu dùng nhiều hơn thì phải kết hợp thêm với 16bit segment register: đó là các register được phân mảnh dùng cho program code, stack và data riêng biệt
+Qtr convert address từ logical sang physical ta đã biết là segment << 4 + offset dùng max 1MB memory vì segment là 16 bit và offset là 4 bit nữa để biểu diễn address
+- Instruction Pointer (IP): Instruction Pointer (còn được gọi là Program Counter) là một thanh ghi trong bộ xử lý lưu trữ địa chỉ của lệnh hiện tại đang được thực thi trong chương trình. IP chỉ định địa chỉ bộ nhớ của lệnh tiếp theo mà bộ xử lý sẽ thực thi. Khi một lệnh hoàn thành, IP sẽ được cập nhật để trỏ đến lệnh tiếp theo trong chương trình.
+- Stack Pointer (SP): Stack Pointer là một thanh ghi trong bộ xử lý lưu trữ địa chỉ đỉnh của ngăn xếp (stack), chứa data bth ấy. Ngăn xếp là một vùng bộ nhớ đặc biệt được sử dụng để lưu trữ dữ liệu tạm thời và thông tin quan trọng như địa chỉ trở về (return address) và các biến cục bộ trong hàm. SP chỉ định địa chỉ hiện tại của đỉnh ngăn xếp và thay đổi khi dữ liệu được đẩy (push) hoặc lấy (pop) từ ngăn xếp.
+Trong 8086 processor, chúng đều là 16 bit register. Bài 2 ta học về kiến trúc x86 I32A thì assembly dùng thanh ghi với hậu tố b w l tùy bit cụ thể, còn ở đây thì 8086 processor là 1 loại cụ thể chỉ hỗ trợ 16 bit register thôi. Dùng segment register mới dùng nhiều hơn 64KB. Trong i32A, ta học address lưu giảm dần, ở đây khác.
+Segment register có 3 loại: CS, SS, DS và ES, đi kèm với thanh ghi offset là IP, SP, DP và EP
+
+Có 4 loại object code:
+1) MS-DOS COM
+PSP là 1 cái prefix chứa thông tin về memory được gán và trỏ tới caller's PSP
+16 bit address => 64KB memory limit khá nhỏ cho cả code và data
+
+2) MS-DOS EXE
+Object file chứa 3 thành phần riêng biệt. Header chứa relocation table size chứ table này k nằm trong header. 
+Relocation table chứa thông tin về address mà k được xđ tại thời điểm compile. Nên nhớ compiler sinh code cho program từ address 0x0000 nhưng kp lúc nào cũng có address fix cứng. Vd câu lệnh jump sẽ được thay thế bởi real address khi compiler xử lý nhưng có nhiều lúc nó chỉ được xđ khi chương trình được nạp vào, xđ như nào bởi linker thì được hướng dẫn bởi relocation table.
+
+3) UNIX a.out
+Các thành phần trong file a.out: header, text, data, etc. 
+Trong đó phần etc chứa thông tin về relocation hỗ trợ cho quá trình linking.
+Trong đó có symbol table cũng là phục vụ cho relocation symbols. Chứa thông tin như offset của nó trong string table, type là local hay global
+Thông tin về relocation của text và data cũng là address offset của text/data segment, pointer tới symbol table.
+
+ZMAGIC và QMAGIC là hai định dạng object file khác trong hệ điều hành Unix. Dưới đây là giải thích về các thuộc tính của chúng:
+1. ZMAGIC: Định dạng ZMAGIC được thiết kế để hỗ trợ cơ chế phân trang (paging) trong hệ điều hành. Trong định dạng này, tệp thực thi được chia thành các trang có kích thước 4KB. Hệ điều hành có thể store/restore một hình ảnh bộ nhớ nguyên thô (raw memory image) vào đĩa cứng. Điều này cho phép hệ điều hành lưu trữ và khôi phục lại trạng thái của một quá trình hoặc một hệ thống tài nguyên thô.
+2. QMAGIC: Định dạng QMAGIC được thiết kế để loại bỏ sự trùng lặp trong tiêu đề và các đoạn mã (segments). Để tránh con trỏ NULL, hệ điều hành không ánh xạ trang 0. Điều này có nghĩa là không có dữ liệu hoặc mã nào được đặt tại địa chỉ 0 trong bộ nhớ. Điều này giúp tránh các lỗi truy cập không hợp lệ và tăng tính ổn định của hệ thống.
+Tóm lại, ZMAGIC và QMAGIC là hai định dạng object file được sử dụng trong hệ điều hành Unix, mỗi định dạng có các thuộc tính và mục đích sử dụng riêng.
+
+3) UNIX ELF (Executable and Linking Format)
+Là loại hiện đại nhất, hỗ trợ OOP, dynamic link, header chứa thông tin qtr như architecture, byte order, 32/64bit
+
+Các thành phần của ELF object file: ELF header, Program header, Section header
+Các thành phần của ELF header, section header, program header, Symbol table (nằm trong section header phần text)
+
+
+B3: 
+Linker ngoài combine các object lại, nó còn plan memory cho output, gán địa chỉ cho mỗi segment và symbol, relocate variables
+
+-> Mỗi module là 1 segment
+Ta ghép thành base address nối tiếp nhau k overlap. Có memory alignment chia hết cho 4(Intel) or 8(PowerPC)
+
+-> Multiple segment object file
+Thứ tự gom là: text module A -> text module B -> data A -> data B -> BBS A -> BBS B. Gom mọi text thành 1 segment riêng, mọi data và bbs thành 1 segment riêng.
+Trong ELF thì object file nhiều trường hơn, segment k bắt đầu từ address 0, stack trên code, heap dưới code. Cơ chế tương tự
+
+-> Cách linker xử lý symbol
+Symbol table lưu dạng hash các linked list: (hash(symbol))%N
+
+Relocation cơ chế cũng chỉ là lấy các segment address trong relocation table ra rồi cộng base segment address vào là xong
+
+
+***Note:
+Chỉ cho assembly, việc đầu tiên cần làm là chuyển sang code C trước
+Calling convention lúc gọi đệ quy cũng cần giải phóng hàm gọi đó cho đúng
+Gán thanh ghi, gọi hàm, lấy lại giá trị thanh ghi bị sai vì hàm có thể đổi thanh ghi rồi. Nên dùng biến local hơn
+E + 0x120 + 0x4ca8 = base của E + E(địa chỉ cũ) + giá trị relative
+jns là jump if not sign
+cmpl a,b là lấy b - a
+***Trap:
+movl $12,%eax => lưu giá trị 12 vào thanh ghi eax, eax đổi giá trị thành 12
+movl $12,%esp => lưu giá trị 12 vào vị trí 0(%esp), giá trị thanh ghi esp k đổi
+
+
+Chapter 1:
+eax ebx ecx edx => 32 bit
+AX BX CX DX => 16 bit low
+AH AL => 8bit high và 8bit low của AX, tương tự BX CX DX 
+BP SP là 16 bit low của EBP và ESP
+(Ignore) ESI EDI
+
+Truy cập vào mảng 
+movl $1,%eax => lưu 1 vào thanh ghi eax 32bits
+movb $1, 0x80800000 => lưu 1 vào memory tại địa chỉ 0x80800000 8bit
+addl subl idivl imull andl orl 
+addl $1,%eax => %eax += 1 
+cmp %ebx,$1 => param2 trừ param1, zero flag được set nếu = 0, signflag được set nếu < 0
+JMP JE JL JG JNE JGE JLE tương tự là check zeroflag và signflag
+PUSH và POP đều tự đổi thanh ghi esp như ý
+CALL <label> sẽ PUSH vào câu lệnh sau vào stack và chuyển EIP đến label
+RET $8 => sẽ pop return address khỏi stack và đổi EIP thành return address đó. Optional params để giải phóng 8 bytes trên stack tương ứng 2 tham số truyền vào hàm sau khi thực hiện xong
+LEAVE => đặt giá trị của %ebp vào %esp và pop giá trị từ ngăn xếp vào %ebp
+ENTER $12, 0 => tham số 1 là kích thước stack frame cho hàm này là 12, 0 là số lần hàm này gọi lồng hàm khác (k tính đệ quy) là 0. Sẽ lưu ebp vào stack, gán esp cho ebp và trừ esp xuống $16
+(Ignore) Instructions DIV MUL NOT NEG TEST LOOP LEA PUSHAD POPAD; Overflow Flag OF và Carry Flag CF;  
+
+Suffix: b byte 1 byte, w word 2 bytes, l long 4 bytes
+
+1) Dùng .text báo hiệu bắt đầu phần code.
+VD1:
+.text
+main: ...<nội dung hàm main>
+f: ...<nội dung hàm f>
+VD2:
+.text
+.globl main 
+  .type main,@function
+main: ...<nội dung hàm main>
+=> Khai báo chi tiết hơn hàm main là 1 function global
+
+2) Dùng .data báo hiệu bắt đầu khai báo biến
+VD:
+.data
+  .type a,@object
+  .size a,12
+a: 
+  .long 1
+  .long 2
+  .long 3
+=> Khai báo biến a có kiểu là @object(tức là mảng) với kích thước 3 phần tử, mỗi phần tử 4 bytes là 32 bit kiểu long
+
+movl a(,%eax,4),%eax => lấy giá trị a + %eax * 4 hay truy cập vào a[%eax] là phần tử thứ %eax của mảng a, mỗi phần tử 4 bytes, index tính từ 0
+
+3) Dùng .section .rodata báo hiệu khai báo các biến readonly
+VD: 
+.section .rodata
+.LCO:
+  .string "%d\n"
+=> Biến này tên là .LCO
+
+Ngoài ra còn có:
+.file "program.c" => gắn debug info trong file. Nó cùng cấp bậc với .text và .data
+x: .long 12 => 1 số nguyên 4 bytes có giá trị là 12
+x: .word 34 => 1 số nguyên 2 bytes có giá trị là 34
+x: .byte 'A' => 1 số nguyên 1 byte có giá trị là 'A' = 65
+a: .space 20 => 1 mảng có 20 phần tử chưa gán giá trị
+m1: .ascii "Hello World!\0" => string có \0 ở cuối
+m2: .asciiz "Hello World!" => string k có \0 ở cuối
+.p2align 2,3 => dùng ngay sau .text và .data trước khi khai báo bất cứ 1 cái gì. Sẽ set address chia hết cho 2^2, dịch max là 3 bytes
+=> Thường dùng mỗi số, mảng, string, .text và .data thôi, k cần quan tâm mấy cái khác
+
+VD: andl $-16,%esp => đảm bảo con trỏ stack chia hết cho 16 dịch xuống dưới. Vì -16 dạng hex là FFFFF0 và binary là 111110000, khi andl vào thì giá trị thanh ghi %esp sẽ giữ nguyên phần đầu và giảm sao cho 4 bit cuối luôn là 0. Mà 16 là 10000 nên 4 bit cuối là 0 sẽ luôn chia hết cho 16
+
+Dùng stack:
+Gọi hàm -> gán ebp -> gán esp vào ebp -> khởi tạo sub esp đi -> ... -> leave -> ret
+Địa chỉ mở rộng dần từ cao xuống thấp, cao bên trên, thấp ở dưới. 
+
+- cdecl:
+right to left, caller pass và release params trên stack, số lượng params k fix cứng. VD:
+push c
+push b
+push a
+call func
+add $12,%esp
+Dùng %eax
+- pascal:
+left to right, callee release stack chứa params, số lượng params fix cứng. VD
+push a
+push b
+push c
+call func
+Dùng %eax
+- stdcall:
+right to left, callee release stack chứa params, số lượng params fix cứng. VD:
+push c
+push b
+push a
+call func
+Dùng %eax
+- fastcall:
+Thường là từ phải qua, pass 1 phần register 1 phần stack. Callee release nếu có dùng stack truyền params vào. VD:
+mov c, %eax
+mov b, %edx
+mov a, %ecx
+call func
+
+Real address mode:
+Physical address = segment << 4 + offset (công thức hệ 2)
+Mỗi segment dùng 64KB memory vì biểu diễn địa chỉ bằng 16 bits, thêm thanh ghi offset 4 bit thành 1MB dùng 20 bits
+
+Chapter 2:
+8086 processor sử dụng 16 bit register với IP và SP dùng max 64KB. Để dùng 1MB, nó thêm segment register đăng trước. CS cho code, SS cho stack, DS và ES cho data. Đi thành cặp Segment / Offset là CS /IP hoặc SS / SP
+Physical address = segment << 4 + offset (công thức hệ 2)
+Để làm trên hệ 16: 
+CS=0x1234, IP=0x2140
+Absolute address: 0x12340 + 0x2140 = 0x14480 => tức CS thêm 0 + IP, nếu k bị dư sẽ tính ra nhanh
+
+Chapter 3:
+Cơ bản ghép các module lại thành 1, mỗi segment có 1 base address mới nối tiếp nhau nhưng được align chia hết cho 8(PowerPC) hoặc 4(Intel32) (đề bài sẽ nói)
+
+Link multiple segment object file: cùng segment thì dùng word aligment 4 bytes, khác segment thì dùng page alignment đề bài sẽ nói điểm bắt đầu và kích thước (thg là 4KB = 4096B = 1000h). Phần data và BBS dùng word alignemnt vì có same feature. Nó gom phần text của các module lại thành 1 segment, phần data và BBS của các module lại thành 1 segment.
+VD: text hàm main 1000-2016 => tức size của hàm main là 1017 tính cả bytes bắt đầu và bytes kết thúc.
+Cách tính nhanh: Để biết 1 số hexa lớn hơn 1 số hexa khác mà chia hết cho 4, ta tăng số cuối cùng của hexa lên cho đến khi nó chia hết cho 4. Nếu nó là CDEF, thì số cuối phải thành 0 và số trước đó sẽ +1, nếu số trước đó là f thì lại thành 0 và +1 số trước đó nữa, nếu tất cả là f thì tất cả thành 0 hết và thêm 1 vào đầu.
+Cách tính nhanh chia hết cho 4096 = 1000 hexa => cho 3 số cuối thành 0 và tăng số trước đó lên 1 tương tự lùi dần nếu là f
+
+1 địa chỉ X trỏ đến 1 địa chỉ Y tuyệt đối. Địa chỉ của X mặc định sẽ relocation thành địa chỉ của Y + base address của segment mà Y thuộc về
+Reference tương đối thì cũng chỉ là: address mốc tương đối + giá trị reference. VD: E + 0x11 vì tham chiếu tương đối k phụ thuộc vào absolute address của segment
+

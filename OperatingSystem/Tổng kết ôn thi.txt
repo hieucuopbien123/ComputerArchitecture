@@ -1,0 +1,249 @@
+Tổng kết 4 chương cuối:
+
+
+-> Main memory:
+Kiến thức background thôi mà hay vl
+Memory structure of a process và addresss space: 4 phần cơ bản
+
+1)
+Logical and physical address space: Địa chỉ trên PC là logical đó
+=> protect address space bằng base register và limit register nhằm tránh ct này access code và data ct khác khi chạy. Kiểu mẹ gì cũng phải có protection of memory dù dùng pp nào để lấy data từ memory cho CPU để đảm bảo 1 process chỉ lấy đúng phần mem của nó
+
+MMU: Tức là chương trình đang chạy và CPU đang làm vc thì nó cần truy xuất địa chỉ 1 biến trên main mem chẳng hạn thì nó được address biến + relocation register trong MMU = địa chỉ thật để lấy trên main mem. CPU và main mem đều là phần cứng và xử lý trong lõi đó.
+
+
+2) => theo luồng logic cả:
+Rất đơn giản, ứng dụng của ta dùng logical address space cần map sang physical address space trong main mem gọi là mem allocation. Cái bên trên để hoạt động thì phải là single contiguous section trong physical mem vì 1 process trên mỗi 1 vùng nhớ duy nhất tính bằng MMU. 
+Khi dùng contiguous như thế thì main mem thg dùng PP variable partition để sắp xếp các thứ lưu trong mem. Mỗi process là 1 ứng dụng mới muốn lưu thì sẽ lưu trong 1 holes. 1 process rời đi sẽ free vị trí của nó. Hole ở đây là từng blocks chứa free memmory nằm rải rác.
+VD: lowest address-[free][process1][process2][process3][free][process4]-highest address
+=> đang có 2 holes -> process 2 finish sẽ free luôn thành: 
+lowest address-[free][process1][free][process3][free][process4]-highest address
+=> trở thành 3 holes. Mỗi 1 process mới muốn vào sẽ chọn các hold vừa đủ để nhét vào và reallocation register của nó set là address nhỏ nhất của hole. 
+Vd hole process 1 là [5..6..7..8] thì reallocation register của process này lưu address 5
+Có 3 cách là firstfit, bestfit, worstfit ez rồi
+
+=> Nhưng cách trên gặp vấn đề về fragmentation: 
+external fragmentation: chiếm đủ để thực hiện process nhưng lại k liên tiếp nên k thực hiện được
+internal fragmentation: chiếm thừa nhưng cứ mỗi cái thừa 1 tí làm cho phần thừa éo bh dùng được
+=> Thì họ cũng fix cái này bằng phương pháp gọi là compaction: nó trộn memory content để gom các free mem lại với nhau trong 1 large hole(block). 
+Cái này nghe thì được nhưng trong thực tế chỉ khả dụng khi ứng dụng dùng dynamic reallocation được, tức bộ nhớ cũng phải chỉ được allocate vào runtime chứ kp muốn đổi lúc nào cũng được, bên cạnh đó vc shuffle loạn mem cũng ảnh hưởng đến I/O task, nó chỉ được thực hiện I/O task trong buffer mà thôi. 
+
+=> Chính vì điểm bất tiện này nên phần lớn HĐH bây giờ nó dùng các phướng pháp non-contiguous mem management. Cơ chế rất đơn giản là break mainmem thành từng frame, break logical mem thành từng page và ánh xạ 2 cái cho nhau thông qua page table.
+Các page = các frame đều cùng size.
+
+
+3) Page: 
+Để allocate n logical page, OS phải tìm n free frame để load vào. Tức ta thao tác trực tiếp với logical mem qua từng page thoải mái và người dùng éo cần biết bên trong như nào, còn thực tế nó ánh xạ đến bộ nhớ thực trong main mem chứ logical mem kp là bộ nhớ lưu trữ trong máy gì cả, máy tính hiển thị cái logical mem nhưng thực chất nó chả có gì mà chỉ có reference đến bộ nhớ thực physical mới thực sự lưu
+Logical address space of a process is 2^m là đang nói về kích thước logical address của process đó
+Cơ chế chuyển đổi từ logical address sang physical address theo kích thước. Làm chủ hoàn toàn về kích thước và cách tính trong page
+
+Page table gây ra 2 vấn đề: Nó lưu trên main mem 2 thành phần; Nó phải access vào mem 2 lần với mỗi data/instruction fetch => fix bằng TLB
+TLB có ASIDs với 3 cơ chế hiển nhiên: ASIDs cung address space protection tức page nào truy xuất đúng ASIDs đó, ASIDs lưu page frame nhiều process trong cùng 1 bảng TLB, mỗi lần truy xuất 1 page mới mà đều k có thì TLB bị xóa và xây lại => hiển nhiên vl ấy
+
+Tính Effective Access Time: 
+Nếu tìm thấy page trong TLB chỉ truy xuất 1 lần vào main mem mất x ns, k tìm thấy sẽ phải truy xuất 2 lần, 1 cho page table, 1 cho frame mất 2x ns, hit ratio is 90% thì:
+EAT = 90%x + 10%*2x => tính xác suất là 90% số lần truy xuất mất x ns, 10% còn lại tốn 2x ns
+
+Đầu tiên ta nhìn kích thước của page là 2KB(kp bộ nhớ mà page chiếm nhé), system dùng 14 bit tức là:
+Đổi từ kích thước của page là 2000 bytes thành 2^n là cần tối thiểu n = 11
+Hệ thống dùng 14bits tức là m = 14 
+=> ta cần hiểu m và n chỉ là cách đánh số trên logical address space.
+
+
+##################
+##  break mind  ##
+##################
+
+[page1][page2][page3]
+Trước hết cần hiểu page và address khác nhau. Page chứa 1 cụm các address, do 1 page lưu trữ bằng 1 frame nên mọi address trong 1 page có thể coi là liên tiếp mà. 1 ứng dụng kp gói chỉ trong 1 page mà trong nhiều page và có thể phần lẻ page. Do address trong page liên tiếp nên truy xuất đến page bằng address đầu tiên page đó để lấy cả frame là xong
+
+Tức là cái [p,d] với p là m-n bits, d là n bits thực chất là 1 địa chỉ và cách ta truy xuất đến chỉ 1 địa chỉ đó trong physical address thôi
+
+Để nhớ rất đơn giản ta bỏ đi vai trò của page, chỉ cần nhớ cả cục system(1 ứng dụng) hay cả logical address space:
+System có kích thước 2^m bytes thì nó dùng m bit để đánh số từng address, có 2^m address, mỗi address 1 byte thì system có 2^m bytes:
+[address0][address1]...[address 2^m-1]
+Từ đó nhét page vào, tùy page size như nào mà mỗi page chiếm 1 lượng address tương ứng. Page size là 2^n tương tự là nó có 2^n address.
+[address0][address1]...[address 2^n-1]
+=> éo cần quan tâm bất cứ công thức nào khác
+cái 0, 1,..2^n-1 là chỉ số index
+
+VD1: Page có 2000 bytes(tức 2000 address) thì n = 10.9 phải lấy 11 tức page dùng tới 2048 địa chỉ mới đủ
+VD2: Program dùng 3 page, page của system vẫn có 4 page tức 1 page có invalid bit để bảo k thuộc về program đó
+
+Page size là số lượng address trong nó, tính 1 address = 1 byte là kích thước của page đó. Nhưng khi nói về vc 1 entry tiêu thụ bao nhiêu byte thực chất là số lượng data có thể lưu trong main mem mà entry đó trỏ tới. 1 entry tốn 4 bytes thì RAM tốn 4*số lượng entries size cho process chạy page table đó.
+
+##################
+##  break mind  ##
+##################
+
+
+Vấn đề về mem protection: khi kích thước process lẻ chứ éo là 2^n => valid/invalid bit + page table length trong page table
+
+Reentrant code -> dùng shared page
+
+Page table lớn sẽ tốn và lâu -> 3 structure:
+1) Hirarchical Page Table được implement bằng technique 2 level page table: [p1,p2,d]
+2) Hash page table: hash m-n bit đầu address -> entry in page table => chú ý nó thay page table hoàn toàn bằng hash table
+3) Inverted Page Table: giảm mem nhưng tăng time. Thay vì: logical address -> page table -> physical mem => ta dùng: entry in page table -> physical mem
+Tức page table có cùng kích thước và frame với physical mem ở TH này
+Nhưng tốn time => dùng hash ở trước đỡ phải search cũng được
+Nhưng shared mem tính sao => map nhiều virtual vào cùng 1 shared physical address thôi
+
+##################
+##  break mind  ##
+##################
+
+How many bits are required for each page table entry?
+=> hỏi số lượng bit cần ở 1 entry
+
+Cần hiểu page table lưu cái gì?
+với one level -> từng entry của page table chứa index của frame trong physical mem. Trùng hợp là cái này là f đi chẳng hạn thì khi nối với offset ở địa chỉ gốc sẽ ra đúng địa chỉ của frame. [f,d] => số lượng bit nó cần phụ thuộc số lượng frame, nếu có 16 frame sẽ cần 4 bit mới biểu diễn hết đủ index các frame chứ
+Tức ở TH này số lượng entry của page table bằng với số lượng page chứ kp số lượng địa chỉ. 
+
+Với 2 level: 
+outer page -> inner page -> mem
+Giả sử có 16 frame trong mem
+inner page có 4 pages -> mỗi page đó có 4 pages con bên trong. Mỗi page con refer loạn xạ đến các frame
+outer page có 4 pages -> mỗi page đó refer đến page con đầu tiên của 4 page bên trong
+Số lượng entry của inner page là số lượng page cha 
+Số lượng entry của outer page là số lượng page cha
+Số lượng entry của page cha là số các page con = tổng lượng page / số lượng page cha
+
+=> Điều đặc biệt là giá trị trong mọi entry là address đầu tiên của cái tiếp theo mà nó trỏ tới luôn -> éo biết đáp án sai.
+Nếu mỗi entry trỏ tới index của frame thì mọi chuyện sẽ rất hợp lý nhưng theo đáp án thì coi là kia
+
+Chốt: Ý là ứng dụng của ta rất lớn có 1GB chẳng hạn thì ta cũng éo care, quan trọng là khi ứng dụng chạy thì nó load vào main mem, khi đó mỗi byte của ứng dụng lưu tại 1 địa chỉ. Nên vc ta hiểu main mem có 1 set các địa chỉ là từng byte1 là hoàn toàn đúng. Các address được gom vào 1 frame thì kích thước 1 frame đó cũng là số lượng địa chỉ trong frame đó x 1 bytes và bản chất đúng là nó lưu data.
+Kích thước của page table nói phải hiểu 2 ý khác nhau, kích thước của data thực tế của ứng dụng mà nó refer tới hay số lượng page entry. Thg thì là số lượng page
+Còn kích thước của 1 entry ta cũng phải hiểu là kích thước của 1 page data mà nó refer tới hay kích thước phần content của nó là lưu index của frame. 
+Ta phải tự hiểu VD nói số bit cần dùng trong entry là số bit để lưu lượng index của frame còn nói page entry chiếm 4 bytes tức page đó có 4 address data hợp lý
+Số lượng page trong page table = số lượng entry
+
+Với câu hỏi bên trên thật sự rất tricky: nó k rõ là 2 level thì hỏi outer page table, inner page table, hay page cha của inner page table. Giả sử làm theo mô hình:
+Outer: [0, 0][1, 4][2, 8][3, 12] -> [index, index]
+Inner: PageCha1[ [0, 500] [1, 200] [2, 300] [3, 400] ], PageCha2[ [4 ,]... ] -> [index, index]
+=> nó k lưu address gì cả và k bh truyền address vào đây mà chỉ báo thứ tự frame nào. Giả sử mô hình [4][4-4][16] thì
+Outer Page entry cần 2 bit
+Inner page entry cần éo có
+PageCha thì 1 entry cần 4 bits để refer hết lượng frame
+Page con trong cha ta k nói vì nó đâu có thể hiện gì
+Tức địa chỉ tổng cần 6 bit và cũng là log2(16*4)=6 => nếu hỏi tổng lượng bit cần ở address thì là 6 chứ tổng lượng bit cần ở 1 entry của table con thì là 4 thôi => giữ nguyên quan điểm đầu tiên và giải sai
+
+##################
+##  break mind  ##
+##################
+
+
+//bỏ k thi
+Ta đã học qua 2 kiểu là holes và page, kiểu cuối là segmentation:
+Cung user view of segmentation, mỗi segment là 1 contiguous mem
+Segment table: limit, base => cơ chế đơn giản
+Protection bằng cách so sánh với limit
+[s,d] với s là offset để search trong page table, d để protection là index của segment muốn lấy
+Nó có thể biến cái protection này là validation bit gắn với từng segment
+//bỏ k thi
+
+
+Swap: process đi ra backing store rồi đi vào main mem; backing store lớn fast; thời gian phụ thuộc vào kích thước transfer time; system lưu 1 ready queue có ready-to-run processes; Phiên bản modified của swaping trên các nền tảng: start khi mem allocate quá threshold; disable khi mem demand below threshold
+Context switch đi kèm swapping: next process khi switch phải swap out current process và swap in target process, tốn tg và có thể tối ưu bằng cách giảm size of mem swap -> cần biết chính xác lượng mem sử dụng
+
+
+
+-> Virtual memory: 
+Là bộ nhớ có set các page, 1 lượng refer tới physical mem, phần còn lại có page table empty vì lưu trong backing store, khi cần mới load vào main physical mem. Exec process mà chỉ cần 1 phần trong main mem, hiển thị cho người dùng như cả ứng dụng đang chạy làm bộ nhớ user thấy lớn hơn rất nhiều những gì có thực trong main mem.
+
+Cái phần trống trong cấu trúc bộ nhớ là phần mở rộng của heap và stack khi thực thi chính là phần hole trống trong virtual mem. 
+Dùng valid-invalid bit đánh dấu page trên main mem => invalid xử lý Page Fault
+
+1)
+Pure Demand Paging -> Page Fault liên tục
+Demand Paging: page cần trong execution time gây page fault - worse case quá nhiều bước, nào là save vào PCB hay cho vào hàng đợi để chờ request được served => overhead
+
+
+2) Copy-on-write: 
+Parent gọi fork() => child copy của parent => chậm
+Fix: Frame nào chỉ xem thì share chung, frame nào có thể bị modify thì copy -> mark là copy-on-wirte page
+
+
+3) No free frame để swap trống thì cần viết thuật toán cho swap sao cho minimum number of page fault
+Cách normal cứ chọn bừa victim k dùng r swap
+modify bit quyết định có write vào disk k
+Algorithm: dùng reference string là chuỗi số page number
+  FIFO -> page nào vào trước sẽ ra trước
+  Optimal -> impossible 
+  LRU -> swap với cái lâu k dùng nhất
+    Counter implementation: copy clock vào counter gắn từng page, search mọi page update
+    Stack implementaion: k cần search nhưng update expensive, đổi pointer refer tới lên đầu stack
+
+
+4) Allocation of Frames
+1 process nên có bnh frame, nên có ít page nhất có thể để giảm page fault
+  Fixed allocation: Equal allocation(VD 5 processes, 100 frames) và Propotional allocation(tỉ lệ size)
+  Priority allocation: khi dùng page replacement thì chọn replace frame nào
+    Global allocation: chọn swap frame của process có priority thấp hơn
+    Local allocation: more consistent
+
+
+5) Thrashing:
+Quá ít frame làm swap in/out liên tục
+Low CPU utilization, increase degree of multiprogramming
+Fix: chỉ dùng local allocation với lượng frame vừa đủ mỗi process ok nhưng service time có thể tăng khi cần đến global allocation
+
+
+=> Vấn đề chính ở cách fix này là k rõ 1 process cần bnh frame là đủ
+Cái locality rất xàm lol: thực chất chỉ là process's mem refer đến 1 tập hợp các hàm, biến,... để exec cái process đó thì các tập hợp đó là locality, nó cx lưu trong tập hợp các pages. 
+=> Dựa vào locality, Working-Set Strategy sẽ giúp xác định số frame mà process cần dùng thực sự. Cơ chế là xác định các page refer tới gần nhất, khi được 1 set các pages như v trong "delta" page gần nhất thì gọi là working set = WSSi (của process Pi)
+
+delta càng lớn thì càng bao trùm, ra vô cực là bao cả program. Nó như kiểu 10,000 instructions = 1 lượng fixed number of pages
+D = Sigma(WSSi) là total demand frames ~ locality cần tìm
+=> Nếu D > m với m là số lượng frame gán cho process thì bị thrashing là đúng r vì chả đủ locality và cần swap các process khác để cung thêm frame cho process này
+
+Để thao tác với working set, ta dùng interval timer và reference bit:
+Timer interrupt sau mỗi 1 lượng đơn vị thời gian, khi đó set giá trị mọi reference bit là 0(page từng được sử dụng trong k đơn vị thời gian kia là 1), có 2 bit mỗi page, nếu 1 bit nào vẫn là 1 thì page đó trong working set
+=> Tăng lượng refernece bit và interrupt nhắn lại có thể cải thiện độ chính xác. 
+Tức là sau mỗi 1 lượng đơn vị thời gian ta keep track xem page nào từng được dùng thì nó là 1 trong working set, page nào k được sẽ mang là 0
+=> Ban đầu mọi page đều quan trọng, cứ sau 1 lượng đơn vị thời gian thì check page nào k sử dụng set refer bit là 0, sau vài lần đơn vị thời gian trôi qua, page nào set hết về 0 tức k được dùng nhiều thì k nằm trong working set -> từ đó tính ra WSSi của Pi đó và tính ra D rồi làm tiếp
+
+PPF: 
+Đặt page-fault frequency hợp lý, frame nào quá nó thì gain frame, k thì lose frame, dùng local replacement.
+
+Window dùng working set -> quá threshold -> working set trimming remove page
+
+Cách convert:
+1KB = 2^10bytes    1MB = 2^20 bytes => còn gì cứ nhân lên
+
+
+
+-> Synchronization:
+Vấn đề 1: process đang thực hiện trong kernel thì bị descheduled khi đang update process table -> cách fix là khiến OS non-preemptive nhưng rât tiếc Linux mặc đinh fully preemptive, nhưng preemptive cũng có lợi về nhiều mặt. Ta cần có 1 cách để giải quyết để khiến shared data được update 1 cách consistent
+
+Producer-consumer probs: biến count và buffer[]
+
+Process phải request permission trước khi truy cập vào bất cứ critical section nào trong nó
+
+3 quy chuẩn của Critical Section:
+Mutual Exclusion: đảm bảo khi 1 process execute critical section của nó thì k có process nào khác có thể thực hiện their critical section.
+Progress: khi 1 thread muốn thực hiện critical section của nó thì nó phải able to do that, k được bị hoãn vô thời hạn, k deadlock.
+Bound waiting: đảm bảo 1 thread k được chờ quá 1 lượng giới hạn nào đó trước khi nó được execute critical section của nó. Đúng ra là ktg khi 1 process tạo 1 request enter vào critical section và trước khi request đó được đáp ứng thì những process khác được sẽ được quyền thực thi critical section của chúng trong 1 giới hạn số lần nhất định. bound càng lớn thì các process khác được thực hiện càng nhiều và process đầu càng được đáp ứng lâu hơn
+
+Compare and swap: nó mạnh hơn testandset, nó có thể làm được như test and set bằng cách cho mọi process dùng cas(&lock,0,1) và gán lock = 0 sau khi thực hiện critical section
+Nhưng nó mạnh hơn ở chỗ nó dùng được cho cơ chế: compare với expected value, giống tức trong quá trình gọi hàm k thay đổi thì gán giá trị mới cho nó. Nếu quá trình gọi hàm bị thay đổi làm giá trị bị khác đi tức có hàm khác chen vào thì quay lại vòng while. Ứng dụng làm atomic adder, tương tự atomic subtract hay nhân đều làm được tương tự.
+
+test and set với bound waiting thì nó chỉ release lock khi tất cả nhóm process đang xét đều free, sẵn sàng dành cho các nhóm process khác
+
+Counting semaphore: 0 <= INIT_COUNT <= MAX_COUNT => giá trị của S là số lượng process/thread có thể truy cập vào critical section cùng 1 lúc. VD chỉ cho phép max mở 8 file cùng lúc cho S=8 chẳng hạn với function openFile
+
+Semaphore without busy waiting: thay vì chạy vòng while, nó thêm process đang chờ vào queue và block lại, gọi block tức nhét vào waiting queue của hệ thống, khi được signal thì remove from list và gọi wakeup, wakeup sẽ tháo từ waiting queue, nhét vào ready queue
+
+Bounded Buffer Prob: vấn đề giống producer-consumer prob nhưng mảng buffer có giới hạn chứ k còn vô hạn. Cơ chế là Producer thêm dần item vào buffer và check nếu buffer chưa full thì cứ thêm, consumer lấy item từ buffer và nếu buffer trống thì chạy vô tận k làm gì. Vc dùng thread riêng ở đây để thêm data và lấy data từ buffer đồng thời chứ k phải thêm mỗi 1 lượng buffer size vào rồi lấy r lại thêm lần lượt sẽ chậm
+=> Slide 51: empty là counting semaphore chỉ được max là n thứ thêm hay xóa cùng 1 lúc, khi đủ rồi thì consumer phải mở khóa để tăng lên; mutex là binary semaphore khởi tạo 1 được đặt ngay trước khi thêm/xóa item từ buffer vì đây là critical section nguy hiểm; full là counting semaphore khởi tạo là 0 luôn bắt theo số lượng item ở buffer, khi 1 item được thêm thì full mới tăng 1, và khi đó 1 consumer mới được truy xuất
+=> Nhờ 3 semaphore này mà ta k cần dùng biến count, check đủ đk full hay empty, thực hiện critical section k bị xung đột. Cái hay là nó dùng giá trị của counting semaphore để làm gì đó chứ k chỉ để cho cùng truy xuất không thôi, ở đây check điều kiện buffer full hay buffer trống khá hay
+
+// Có thể k thi
+Monitor là 1 class trong OOP VD trong java, nó là class mà chỉ cho phép 1 thread được chạy bên trong tại 1 thời điểm, có thể deschedule thread trong monitor bằng condition variables khi điều kiện thỏa mãn. 
+Monitor có thể implement dễ dàng với semaphore để có tính chất mutual exclusion. Entry queue là list of threads có thể thực hiện trong monitor, cái nào xong thì cái khác vào
+
+Condition variable là biến điều kiện ta đặt ra để nếu đk thỏa mãn thì thread đang chạy trong monitor bị block luôn, dùng khi biết nó k thể proceed được nx. Chỉ có 2 hàm wait để thread suspend lại, signal để resume thread trong monitor. Trong monitor chỉ được có 1 thread chạy 1 lúc, nhưng nếu 1 thread đang chạy bị block thì 1 thread khác có thể chạy được, tạo ra nhiều thread dừng giữa chừng trong monitor chờ được thực hiện nốt
+ 
+Cái condition variable chả có mẹ gì, chỉ là 1 cái chờ, cái thực hiện thôi, dùng làm đk như counting semaphore chỉ có điều không có biến đếm như counting semaphore mà chỉ có thực hiện hay k thôi. VD monitor class for ProducerConsumer thì ta dùng wait với signal bình thường, chỉ khác là k cần thêm binary semaphore for mutex vì mặc định trong monitor thì nó đã chỉ cho 1 thread thực hiện 1 lúc r
+// Có thể k thi
+
